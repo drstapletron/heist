@@ -235,6 +235,27 @@ class ArtFileReader(object):
     
     if filename!=None: self.add_filenames(filename)
     
+  def full_event_id(self):
+    '''Returns (Run,SubRun,EventNumber).'''
+    evt_id = self.evt.eventAuxiliary().id() # art event ID object
+    return (evt_id.run(),evt_id.subRun(),evt_id.event())
+  
+  def run(self):
+    '''Returns run number from art event ID.'''
+    return self.evt.eventAuxiliary().id().run()
+  
+  def subrun(self):
+    '''Returns SubRun number from art event ID.'''
+    return self.evt.eventAuxiliary().id().subRun()
+  
+  def event_id(self):
+    '''Returns Event ID number from art event ID.'''
+    return self.evt.eventAuxiliary().id().event()
+  
+  def event_label(self, short=False):
+    '''Returns RunNN SubRunNN EventNN.'''
+    format_str = 'Run%d SubRun%d Event%d' if not short else 'r%ds%de%d'
+    return format_str%self.full_event_id()
   
   def add_filenames(self, filename):
     '''Set self.filename_list.'''
