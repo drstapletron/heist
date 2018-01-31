@@ -33,7 +33,7 @@ import ROOT as ROOT
 
 ################################################################
 
-autoload_headers = ['gallery/ValidHandle.h']
+#autoload_headers = ['gallery/ValidHandle.h']
 
 ################################################################
 
@@ -150,10 +150,22 @@ def read_header(h):
         """Make the ROOT C++ jit compiler read the specified header."""
         return ROOT.gROOT.ProcessLine('#include "%s"' % h)
 def provide_get_valid_handle(klass):
-        """Make the ROOT C++ jit compiler instantiate the
-           Event::getValidHandle member template for template
-           parameter klass."""
-        return ROOT.gROOT.ProcessLine('template gallery::ValidHandle<%(name)s> gallery::Event::getValidHandle<%(name)s>(art::InputTag const&) const;' % {'name' : klass})
+  '''Declare templated valid handle class to gROOT.
+  
+  Make the ROOT C++ jit compiler instantiate the Event::getValidHandle member
+  template for template parameter klass.
+  
+  (Borrowed from Marc Paterno.)
+  '''
+  template_validhandle_string = 'gallery::ValidHandle<'+klass+' >'
+  process_line = ''
+  if template_validhandle_string.replace('std::vector','vector') not in dir(ROOT.gallery):
+    print '[debug: %s not in %s!]'%(template_validhandle_string.replace('std::vector','vector'),dir(ROOT.gallery))
+    process_line = 'template ' \
+      +template_validhandle_string \
+      +' gallery::Event::getValidHandle<'+klass+'>(art::InputTag const&) const;'
+    ROOT.gROOT.ProcessLine(process_line)
+  return process_line
 
 
 # I"m not sure exactly what I really want to do with the next few functions...
@@ -183,34 +195,35 @@ def _do_declare_Ttype(Ttype):
     print 'provide_get_valid_handle returned',retval
   return retval
 
-def init_env(
-    handle_Ttypes=[], 
-    headers=[]
-):
-  #global testvar
-  #print testvar
-  global autoload_headers
-  #global loaded_headers
-  #global loaded_handle_Ttypes
-  # first ensure that the autoload_headers have been loaded
-  for header in autoload_headers+headers:
-    #if header not in loaded_headers:
-    #  retval = read_header(header)
-    #  #print 'read_header() returned',retval
-    #  if retval==0: # TODO: check success condition
-    #    loaded_headers += [ header ]
-    _do_load_header(header)
-  
-  if len(handle_Ttypes)>0:
-    for Ttype in handle_Ttypes:
-      #if Ttype not in loaded_handle_Ttypes:
-      #  retval = provide_get_valid_handle(Ttype)
-      #  print 'provide_get_valid_handle() returned',retval
-      #  if retval==retval: # TODO: impose a success condition
-      #    loaded_handle_Ttypes += [ Ttype ]
-      _do_declare_Ttype(Ttype)
 
-init_env()
+#def init_env(
+#    handle_Ttypes=[], 
+#    headers=[]
+#):
+#  #global testvar
+#  #print testvar
+#  global autoload_headers
+#  #global loaded_headers
+#  #global loaded_handle_Ttypes
+#  # first ensure that the autoload_headers have been loaded
+#  for header in autoload_headers+headers:
+#    #if header not in loaded_headers:
+#    #  retval = read_header(header)
+#    #  #print 'read_header() returned',retval
+#    #  if retval==0: # TODO: check success condition
+#    #    loaded_headers += [ header ]
+#    _do_load_header(header)
+#  
+#  if len(handle_Ttypes)>0:
+#    for Ttype in handle_Ttypes:
+#      #if Ttype not in loaded_handle_Ttypes:
+#      #  retval = provide_get_valid_handle(Ttype)
+#      #  print 'provide_get_valid_handle() returned',retval
+#      #  if retval==retval: # TODO: impose a success condition
+#      #    loaded_handle_Ttypes += [ Ttype ]
+#      _do_declare_Ttype(Ttype)
+#init_env()
+read_header('gallery/ValidHandle.h')
 
 
 
@@ -278,7 +291,8 @@ class ArtFileReader(object):
     Must be called *BEFORE* setup_product_getters().
     '''
     if record_spec not in self.art_record_specs:
-      _do_declare_Ttype(record_spec.cpp_type_string())
+      #_do_declare_Ttype(record_spec.cpp_type_string())
+      provide_get_valid_handle(record_spec.cpp_type_string())
       self.art_record_specs += [ record_spec ]
   
 #  #def check_for_validhandle_template(self, cpp_string):
