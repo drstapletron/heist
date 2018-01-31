@@ -20,7 +20,7 @@ There are things that will need to be initialized between steps 1 and 2
 NOTES:
 
   * heist.ROOT.gallery has attributes which list the ValidHandle
-    template types
+    template types (but NOT until sometime later in initialization!)
   * heist.ROOT.gallery.__getattribute__ is a 'wrapper_descriptor'
     whereas most objects __getattribute__ is a 'method-wrapper'
   * check types/classes declared to CLING with
