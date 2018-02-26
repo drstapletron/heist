@@ -159,6 +159,7 @@ def provide_get_valid_handle(klass):
 # I"m not sure exactly what I really want to do with the next few functions...
 loaded_headers = []
 def _do_load_header(filename):
+  '''Wrapper for read_header (remembers previous includes).'''
   global loaded_headers
   if filename in loaded_headers:
     print 'skipping %s as it is already loaded...'%(filename,)
@@ -172,6 +173,7 @@ def _do_load_header(filename):
 
 loaded_handle_Ttypes = []
 def _do_declare_Ttype(Ttype):
+  '''Wrapper for provide_get_vaild_handle (remembers previous declarations).'''
   global loaded_handle_Ttypes
   if Ttype in loaded_handle_Ttypes:
     print 'skipping %s as it is already declared...'%(Ttype,)
@@ -488,6 +490,23 @@ def validhandle_type_string(record_type, record_namespace, vector=True):
   if vector == True: retval = 'ROOT.vector(' + retval + ')'
   return retval
 
+
+class InputTag(object):
+  '''Like ROOT.art.InputTag, but remembers c++ type.
+  
+  I chose aggregation over inheritance because I'm superstitious about ROOT...
+  '''
+  def __init__(self, 
+      cpp_type, 
+      module_label='', instance_ID='', process_name=''
+  ):
+    self.cpp_type = cpp_type
+    self.input_tag = ROOT.art.InputTag(module_label+':'+instance_ID+':'+process_name)
+    _do_declare_Ttype(cpp_type)
+  def label(self): return self.input_tag.label()
+  def instance(self): return self.input_tag.instance()
+  def process(self): return self.input_tag.process()
+  def encode(self): return self.input_tag.encode()
 
 class ArtRecordSpec(object):
   '''TODO: eliminate this class (and just use InputTag).'''
