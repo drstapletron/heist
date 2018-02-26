@@ -35,6 +35,14 @@ import ROOT as ROOT
 
 autoload_headers = ['gallery/ValidHandle.h']
 
+
+verbose = True
+def vprint(string,*args):
+  if verbose:
+    s = str(string)
+    for a in args: s += ' '+str(a)
+    print '[heist: '+s+']'
+
 ################################################################
 
 #def magicdump(obj, maxlength=65, exclude_hidden=True, exclude=()):
@@ -142,18 +150,23 @@ def grab_art_files(directory, prefix, suffix='.root'):
   for filename in os.listdir(directory):
     if filename[:len(prefix)]==prefix and filename[-len(suffix):]==suffix:
       filename_list += [ os.path.join(directory,filename) ]
+  vprint('filename_list:',filename_list)
   return tuple(filename_list)
 
 
 # useful functions from Marc Paterno
 def read_header(h):
         """Make the ROOT C++ jit compiler read the specified header."""
-        return ROOT.gROOT.ProcessLine('#include "%s"' % h)
+        pline = '#include "%s"' % h
+        vprint('calling gROOT.ProcessLine(\''+pline+'\')')
+        return ROOT.gROOT.ProcessLine(pline)
 def provide_get_valid_handle(klass):
         """Make the ROOT C++ jit compiler instantiate the
            Event::getValidHandle member template for template
            parameter klass."""
-        return ROOT.gROOT.ProcessLine('template gallery::ValidHandle<%(name)s> gallery::Event::getValidHandle<%(name)s>(art::InputTag const&) const;' % {'name' : klass})
+        pline = 'template gallery::ValidHandle<%(name)s> gallery::Event::getValidHandle<%(name)s>(art::InputTag const&) const;' % {'name' : klass}
+        vprint('calling gROOT.ProcessLine(\''+pline+'\')')
+        return ROOT.gROOT.ProcessLine(pline)
 
 
 # I"m not sure exactly what I really want to do with the next few functions...
@@ -187,6 +200,7 @@ def init_env(
     handle_Ttypes=[], 
     headers=[]
 ):
+  vprint('entered init_env...')
   #global testvar
   #print testvar
   global autoload_headers
@@ -222,6 +236,7 @@ class ArtFileReader(object):
   '''
   def __init__(self, filename=None):
     '''Set filename(s) (and nothing else?)'''
+    vprint('entered ArtFileReader constructor...')
     self.filename_list = []
     self.evt = None               # gallery Event
     self.i_evt = None             # index (from 0) of this event in full loop
@@ -270,6 +285,7 @@ class ArtFileReader(object):
     '''Declare the templated type gallery::ValidHandle<type_str> in gROOT.
     
     '''
+    vprint('entered ArtFileReader.declare_validhandle_type...')
     pass
   
   def add_record_spec(self, record_spec):
@@ -277,6 +293,7 @@ class ArtFileReader(object):
     
     Must be called *BEFORE* setup_product_getters().
     '''
+    vprint('entered ArtFileReader.add_record_spec...')
     if record_spec not in self.art_record_specs:
       _do_declare_Ttype(record_spec.cpp_type_string())
       self.art_record_specs += [ record_spec ]
@@ -326,6 +343,7 @@ class ArtFileReader(object):
     
     must be done BEFORE call to evt.getValidHandle()
     '''
+    vprint('enetered ArtFileReader.setup_validhandle_templates...')
     if record_specs!=None:
       self.art_record_specs = []
       for key in record_specs.keys():
@@ -338,6 +356,7 @@ class ArtFileReader(object):
     '''
     must be done BEFORE call to evt.getValidHandle()
     '''
+    vprint('entered ArtFileReader._setup_validhandle_template...')
     # make a string like 'std::vector<gm2truth::IBMSTruthArtRecord>'
     cpp_type_string = record_spec.cpp_type_string()
     print 'provide_get_valid_handle(\'%s\')'%(cpp_type_string,)
@@ -349,6 +368,7 @@ class ArtFileReader(object):
   
   def initialize_gallery_event(self):
     '''Return first gallery event from files.'''
+    vprint('entered ArtFileReader.initialize_gallery_event...')
     filename_vector = ROOT.vector(ROOT.string)()
     for name in self.filename_list:
       filename_vector.push_back(name)
@@ -367,6 +387,7 @@ class ArtFileReader(object):
     must be done AFTER call to evt.getValidHandle()
     (also after ArtFile.art_record_specs has been populated)
     '''
+    vprint('entered ArtFileReader.setup_product_getters...')
     #if self.evt==None: 
     if not self.gallery_evt_initialized:
       print 'setup_product_getters: automatically initializing gallery event'
@@ -377,6 +398,7 @@ class ArtFileReader(object):
     self.product_getters_setup = True
   
   def get_record(self, record_spec):
+    vprint('entered ArtFileReader.get_record...')
     getter = self.product_getters[record_spec]
     retval = None
     try:
@@ -434,6 +456,7 @@ class ArtFileReader(object):
     
     Might work...
     '''
+    vprint('entered ArtFileReader.event_loop...')
     if not self.product_getters_setup:
       print 'event_loop: automatically setting up product getters...'
       self.setup_product_getters()
@@ -468,6 +491,7 @@ def cpp_type_string(record_type, record_namespace, vector=True):
   Example:
     std::vector<gm2truth::IBMSTruthArtRecord>
   '''
+  vprint('entered cpp_type_string...')
   retval = record_type
   if record_namespace != '':
     retval = record_namespace + '::' + retval
@@ -481,6 +505,7 @@ def validhandle_type_string(record_type, record_namespace, vector=True):
   Example:
     ROOT.vector(ROOT.gm2truth.IBMSTruthArtRecord)
   '''
+  vprint('entered validhandle_type_string...')
   retval = record_type
   if record_namespace != '':
     retval = record_namespace + '.' + retval
@@ -496,6 +521,7 @@ class ArtRecordSpec(object):
       module_label, instance_name='', process_name='', 
       vector=True
     ):
+    vprint('entered ArtRecordSpec constructor...')
     self.record_namespace = record_namespace
     self.record_type = record_type
     self.module_label = module_label
@@ -510,6 +536,7 @@ class ArtRecordSpec(object):
   
   def cpp_type_string(self):
     '''Moved to module scope.'''
+    vprint('entered ArtRecordSpec.cpp_type_string...')
     return cpp_type_string(
       self.record_type, 
       self.record_namespace, 
@@ -517,6 +544,7 @@ class ArtRecordSpec(object):
   
   def validhandle_type_string(self):
     '''Moved to module scope.'''
+    vprint('entered ArtRecordSpec.validhandle_type_string...')
     return validhandle_type_string(
       self.record_type, 
       self.record_namespace, 
