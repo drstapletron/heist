@@ -336,8 +336,8 @@ class ArtFileReader(object):
   
   def setup_product_getters(self):
     '''
-    must be done AFTER call to evt.getValidHandle()
-    (also after ArtFile.art_record_specs has been populated)
+    must be done after ArtFile.art_record_specs has been populated
+    can be done after the beginning of the event loop
     '''
     #if self.evt==None: 
     if not self.gallery_evt_initialized:
@@ -348,7 +348,7 @@ class ArtFileReader(object):
                                         eval(rs.validhandle_type_string()))
     self.product_getters_setup = True
   
-  def get_record(self, record_spec):
+  def _get_record_by_artrecordspec(self, record_spec):
     getter = self.product_getters[record_spec]
     retval = None
     try:
@@ -361,6 +361,25 @@ class ArtFileReader(object):
     #retval = retval.product()
     return retval
   
+  def _get_record_by_inputtag(self, input_tag):
+    getter = self.evt.getValidHandle(input_tag.dtype)
+    retval = None
+    try: retval = getter(input_tag.input_tag).product() # this fails...
+    except:
+      import sys
+      print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
+        sys.exc_info()
+      )
+    #retval = retval.product()
+    return retval
+  
+  def get_record(self, specification):
+    if type(specification)==ArtRecordSpec:
+      return self._get_record_by_artrecordspec(specification)
+    elif type(specification)==InputTag:
+      return self._get_record_by_inputtag(specification)
+    else:
+      raise ValueError(str(type(specification))+' is not a valid type for get_record!')
   
   def event_loop(self, evt_list=(), nmax=None):
     '''Like generate_event_loop() but filters by evt_list.
@@ -460,42 +479,47 @@ class ArtRecordSpec(object):
       self.vector)
 
 
-# I was trying to make a nicer ArtRecordSpec, but
-#   * I don't want to have to specify 'vector=True|False' and 'namespace=blah'
-#   * I don't want to write logic to parse a C++ type
-# So maybe I should try clang.cindex.  Or something in CLING?
-#class InputTag(object):
-#  '''Like art InputTag, but remembers type as well...'''
-#  def __init__(self, dtype, modlabel, instname='', procID='', vector=None, namespace=None):
-#    
-#    # just make an input tag
-#    self.input_tag = ROOT.art.InputTag(modlabel,instname,procID)
-#    
-#    # save this in case processing says it's not valid
-#    self.dtype_arg = dtype
-#    
-#    # remove whitespace and std:: prefixes for a few things
-#    dtype = dtype.strip().replace(' ','')
-#    dtype = dtype.replace('std::vector','vector')
-#    self.dtype = dtype
-#    
-#    # figure out if it's a vector (unless we were told explicitly)
-#    if vector!=None: self.vector = vector
-#    else: self.vector = self.dtype.startswith('vector<')
-#    
-#    # figure out if it has a namespace (unless we were told explicitly)
-#    if namespace!=None: self.namespace = namespace
-#    else:
-#      if self.vector:
-#        try:
-#          assert self.dtype.find('vector<') == 0
-#          end = self.dtype.rfind('>')
-#          vector_type = self.dtype[7:end]
-#        except: raise ValueError(self.dtype_arg+' is not a valid type!')
-#      if 
-#    
-#  def __str__(self):
+class InputTag(object):
+  '''Like art InputTag, but remembers type as well...
+  
+  dtype is something like 'ROOT.vector(ROOT.gm2reconeast.BSTCorrectionArtRecord)'
+  or 'ROOT.art.Wrapper(something)'
+  '''
+  def __init__(self, dtype, label, instance='', process=''):
     
+    # save dtype string, then try to turn it into a type
+    self.dtype_arg = dtype
+    try: self.dtype = eval(dtype)
+    except: raise ValueError('Could not resolve '+dtype_arg+' to a valid type!')
+    
+    # THIS is the step that (I think) has to occur before the event loop starts
+    _do_declare_Ttype(self.dtype.__cppname__)
+    
+    # make an art input tag
+    self.input_tag = ROOT.art.InputTag(label,instance,process)
+    
+  def label(self):
+    '''Passthrough to InputTag.label()'''
+    return self.input_tag.label()
+  
+  def instance(self):
+    '''Passthrough to InputTag.instance()'''
+    return self.input_tag.instance()
+  
+  def process(self):
+    '''Passthrough to InputTag.process()'''
+    return self.input_tag.process()
+  
+  def __str__(self):
+    return self.dtype.__cppname__+'_'+self.label()+'_'+self.instance()+'_'+self.process()
+  
+  def cpp_type_string(self):
+    '''For backward-compatibility with use of ArtRecordSpec'''
+    return self.dtype.__cppname__
+  
+  def validhandle_type_string(self):
+    '''For backward-compatibility with use of ArtRecordSpec'''
+    return self.dtype_arg
 
 
 
