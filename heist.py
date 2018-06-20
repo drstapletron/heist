@@ -2,23 +2,14 @@
 
 __doc__ = '''Helpers for gallery+python.
 
-Ideal use case:
-  1) import heist
-  2) open an art file
-  3) tell the art file which records I want
-  4) event loop
-
-There are things that will need to be initialized between steps 1 and 2
-
 2017-07-06: modified some more while working on kicker data...
 2017-08-27: added 'magicdump' method
 2017-08-29: started some heavier modification...
 2017-10-01: mostly cleanup (some debugging)
 2017-11-29: magicdump autodetects iterables
-
+2018-06-20: heist.InputTag makes things better (see example below)
 
 NOTES: 
-
   * heist.ROOT.gallery has attributes which list the ValidHandle
     template types
   * heist.ROOT.gallery.__getattribute__ is a 'wrapper_descriptor'
@@ -27,16 +18,26 @@ NOTES:
       heist.ROOT.gROOT.GetListOfClasses/Types().Print()
 
 TODO:
-  * make InputTags with a member function of ArtFileReader (before
-      the event loop, so the reader has time to initialize the
-      data product getter template types)
-  * ArtRecordSpec (deprecate in favor of InputTag by itself (and
-      some other way of telling the artfilereader which records
-      to access within the event loop)
-  * ArtRecordSpec (if not deprecated): handle process ID, and make
-      the named arguments to the constructor shorter), and make
-      it understand a simple string like ns::type_modlabel__procID
-      
+  * deprecate ArtRecordSpec in favor of heist.InputTag
+  * clean up after that (breaking changes!)
+  * facility to open up a file and inspect all art records (see rootls)
+
+--------------------------------------------------------------
+
+Example:
+  xtalhit_tag = heist.InputTag(
+                'ROOT.vector(ROOT.gm2calo.CrystalHitArtRecord)', 
+                'islandFitterDAQ', 'fitter', '')
+  artreader = heist.ArtFileReader(filename='something.root')
+  
+  for evt in artreader.event_loop(nmax=30):
+    print artreader.event_label()
+    xtalhit_recs = artreader.get_record(xtalhit_tag)
+    heist.magicdump(xtalhit_recs[0])
+
+(NOTE: the heist InputTag object REQUIRES A TYPE STRING)
+--------------------------------------------------------------
+
 '''
 
 #import sys
