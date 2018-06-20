@@ -21,6 +21,7 @@ TODO:
   * deprecate ArtRecordSpec in favor of heist.InputTag
   * clean up after that (breaking changes!)
   * facility to open up a file and inspect all art records (see rootls)
+  * gracefully handle the ProductNotFound exception (and go to the next event)
 
 --------------------------------------------------------------
 
@@ -40,7 +41,7 @@ Example:
 
 '''
 
-#import sys
+import sys
 import ROOT as ROOT
 
 ################################################################
@@ -355,7 +356,6 @@ class ArtFileReader(object):
     try:
       retval = getter(record_spec.input_tag).product()
     except:
-      import sys
       print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
         sys.exc_info()
       )
@@ -367,11 +367,9 @@ class ArtFileReader(object):
     retval = None
     try: retval = getter(input_tag.input_tag).product() # this fails...
     except:
-      import sys
       print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
         sys.exc_info()
       )
-    #retval = retval.product()
     return retval
   
   def get_record(self, specification):
