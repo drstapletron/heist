@@ -17,7 +17,7 @@ There are things that will need to be initialized between steps 1 and 2
 2017-11-29: magicdump autodetects iterables
 
 
-NOTES:
+NOTES: 
 
   * heist.ROOT.gallery has attributes which list the ValidHandle
     template types
@@ -25,6 +25,17 @@ NOTES:
     whereas most objects __getattribute__ is a 'method-wrapper'
   * check types/classes declared to CLING with
       heist.ROOT.gROOT.GetListOfClasses/Types().Print()
+
+TODO:
+  * make InputTags with a member function of ArtFileReader (before
+      the event loop, so the reader has time to initialize the
+      data product getter template types)
+  * ArtRecordSpec (deprecate in favor of InputTag by itself (and
+      some other way of telling the artfilereader which records
+      to access within the event loop)
+  * ArtRecordSpec (if not deprecated): handle process ID, and make
+      the named arguments to the constructor shorter), and make
+      it understand a simple string like ns::type_modlabel__procID
       
 '''
 
