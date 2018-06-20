@@ -292,45 +292,6 @@ class ArtFileReader(object):
       _do_declare_Ttype(record_spec.cpp_type_string())
       self.art_record_specs += [ record_spec ]
   
-#  #def check_for_validhandle_template(self, cpp_string):
-#  def check_for_validhandle_template(self, record_spec):
-#    if len(self.art_record_specs)==0: return
-#    if self.evt==None: raise ValueError('Gallery event not yet created!')
-#    match_strings = []
-#    for att in dir(self.evt): 
-#      if att.startswith('getValidHandle') and len(att)>14:
-#        #validhandle_templates += [ att ]
-#        # first, chop off the string at the first occurrence of ',' or '>' (or a space)
-#        choplocations = []
-#        for char in (',','>'):
-#          loc = att.find(char)
-#          if loc>-1: choplocations += [ loc ]
-#        if len(choplocations)>0:
-#          att = att[:min(choplocations)]
-#        #att_split = [ 
-#        #  s.strip() 
-#        #  for s in att.split('<')
-#        #]
-#        att_split = att.split('<')
-#        att_split = att_split[1:] # drop first element 'getValidHandle'
-#        #match_string = reduce(lambda s1,s2: s1+'<'+s2,att_split)
-#        match_string = reduce(lambda s1,s2: s1.strip()+'<'+s2.strip(),att_split)
-#        match_strings += [ match_string ]
-#    print 'match_strings:'
-#    for s in match_strings: print ' ',s
-#    
-#    cpp_type_string = record_spec.cpp_type_string()
-#    choplocations = []
-#    for char in (',','>'):
-#      loc = cpp_type_string.find(char)
-#      if loc>-1: choplocations += [ loc ]
-#    if len(choplocations)>0:
-#      cpp_type_string = cpp_type_string[:min(choplocations)]
-#    cpp_type_string_split = cpp_type_string.split('<')
-#    cpp_type_string = reduce(lambda s1,s2: s1.strip()+'<'+s2.strip(),cpp_type_string_split)
-#    print 'cpp_type_string:',cpp_type_string
-#    
-#    return cpp_type_string in match_strings
   
   def setup_validhandle_templates(self, record_specs=None):
     '''
@@ -400,39 +361,6 @@ class ArtFileReader(object):
     #retval = retval.product()
     return retval
   
-#  def generate_event_loop(self, nmax=None):
-#    '''Get an event loop with `for evt in generate_event_loop()`.
-#    
-#    Basic: works, and honors nmax.
-#    
-#    Calls self.initialize_gallery_event() and self.setup_product_getters().
-#    
-#    Does NOT check for jit-compiled validHandle c++ templates.
-#    '''
-#    # don't do initialize_gallery_event() and setup_product_getters() yet...
-##    # ...some check on result of 'setup_validhandle_template'?
-##    #self.setup_validhandle_templates()
-##    
-##    self.initialize_gallery_event()
-##    # this wasn't going to work (the check function always returns
-##    #   False if _setup_validhandle_template() has not been called
-##    #   before get_first event())
-##    #for key in self.art_record_specs.keys():
-##    #  rspec = self.art_record_specs[key]
-##    #  if not check_for_validhandle_template(rspec):
-##    #    _setup_validhandle_template(rspec)
-##    
-##    self.setup_product_getters()
-#    
-#    self.i_evt = 0
-#    self.i_loop = 0
-#    while (not self.evt.atEnd()):
-#      yield self.evt
-#      self.i_evt += 1
-#      if nmax!=None and self.i_evt >= nmax:
-#        print 'Reached maximum %d events!'%(nmax,)
-#        break
-#      self.evt.next()
   
   def event_loop(self, evt_list=(), nmax=None):
     '''Like generate_event_loop() but filters by evt_list.
@@ -467,9 +395,6 @@ class ArtFileReader(object):
   generate_event_loop = event_loop
 
 
-#class ArtFile(ArtFileReader):
-#  def __init__(self):
-#    pass
 ArtFile = ArtFileReader # TODO: remove to deprecate 'ArtFile'
 
 
@@ -504,15 +429,16 @@ class ArtRecordSpec(object):
   '''TODO: eliminate this class (and just use InputTag).'''
   def __init__(self, 
       record_type, record_namespace, 
-      module_label, instance_name='', process_name='', 
+      module_label, instance_name='', process_ID='', 
       vector=True
     ):
     self.record_namespace = record_namespace
     self.record_type = record_type
     self.module_label = module_label
     self.instance_name = instance_name
+    self.process_ID = process_ID
     self.vector = vector
-    self.input_tag = ROOT.art.InputTag(self.module_label,self.instance_name)
+    self.input_tag = ROOT.art.InputTag(self.module_label,self.instance_name,self.process_ID)
   
   def __str__(self):
     #return self.cpp_type_string() + ' with InputTag=%s_%s'%(self.module_label,self.instance_name)
@@ -534,7 +460,42 @@ class ArtRecordSpec(object):
       self.vector)
 
 
-
+# I was trying to make a nicer ArtRecordSpec, but
+#   * I don't want to have to specify 'vector=True|False' and 'namespace=blah'
+#   * I don't want to write logic to parse a C++ type
+# So maybe I should try clang.cindex.  Or something in CLING?
+#class InputTag(object):
+#  '''Like art InputTag, but remembers type as well...'''
+#  def __init__(self, dtype, modlabel, instname='', procID='', vector=None, namespace=None):
+#    
+#    # just make an input tag
+#    self.input_tag = ROOT.art.InputTag(modlabel,instname,procID)
+#    
+#    # save this in case processing says it's not valid
+#    self.dtype_arg = dtype
+#    
+#    # remove whitespace and std:: prefixes for a few things
+#    dtype = dtype.strip().replace(' ','')
+#    dtype = dtype.replace('std::vector','vector')
+#    self.dtype = dtype
+#    
+#    # figure out if it's a vector (unless we were told explicitly)
+#    if vector!=None: self.vector = vector
+#    else: self.vector = self.dtype.startswith('vector<')
+#    
+#    # figure out if it has a namespace (unless we were told explicitly)
+#    if namespace!=None: self.namespace = namespace
+#    else:
+#      if self.vector:
+#        try:
+#          assert self.dtype.find('vector<') == 0
+#          end = self.dtype.rfind('>')
+#          vector_type = self.dtype[7:end]
+#        except: raise ValueError(self.dtype_arg+' is not a valid type!')
+#      if 
+#    
+#  def __str__(self):
+    
 
 
 
