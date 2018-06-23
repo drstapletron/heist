@@ -489,7 +489,7 @@ class InputTag(object):
     # save dtype string, then try to turn it into a type
     self.dtype_arg = dtype
     try: self.dtype = eval(dtype)
-    except: raise ValueError('Could not resolve '+dtype_arg+' to a valid type!')
+    except: raise ValueError('Could not resolve '+self.dtype_arg+' to a valid type!')
     
     # THIS is the step that (I think) has to occur before the event loop starts
     _do_declare_Ttype(self.dtype.__cppname__)
