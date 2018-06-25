@@ -356,20 +356,24 @@ class ArtFileReader(object):
     try:
       retval = getter(record_spec.input_tag).product()
     except:
-      print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
-        sys.exc_info()
-      )
+      exc_info = sys.exc_info()
+      if 'ProductNotFound' not  in exc_info[1]:
+        print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
+          exc_info
+        )
     #retval = retval.product()
     return retval
   
   def _get_record_by_inputtag(self, input_tag):
     getter = self.evt.getValidHandle(input_tag.dtype)
     retval = None
-    try: retval = getter(input_tag.input_tag).product() # this fails...
+    try: retval = getter(input_tag.input_tag).product()
     except:
-      print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
-        sys.exc_info()
-      )
+      exc_info = sys.exc_info()
+      if 'ProductNotFound' not in exc_info[1]:
+        print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
+          exc_info
+        )
     return retval
   
   def get_record(self, specification):
