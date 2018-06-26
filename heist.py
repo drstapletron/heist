@@ -357,7 +357,7 @@ class ArtFileReader(object):
       retval = getter(record_spec.input_tag).product()
     except:
       exc_info = sys.exc_info()
-      if 'ProductNotFound' not  in exc_info[1]:
+      if 'ProductNotFound' not  in str(exc_info[1]):
         print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
           exc_info
         )
@@ -370,7 +370,7 @@ class ArtFileReader(object):
     try: retval = getter(input_tag.input_tag).product()
     except:
       exc_info = sys.exc_info()
-      if 'ProductNotFound' not in exc_info[1]:
+      if 'ProductNotFound' not in str(exc_info[1]):
         print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
           exc_info
         )
