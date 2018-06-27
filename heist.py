@@ -227,6 +227,9 @@ init_env()
 
 
 
+# strings like 'ROOT.vector(ROOT.gm2calo.CrystalHitArtRecord)':
+product_getter_pytype_strings = []
+
 
 class ArtFileReader(object):
   '''Tracks art files, does ROOT initialization, and provides an event loop.
@@ -348,6 +351,10 @@ class ArtFileReader(object):
     for rs in self.art_record_specs:
       self.product_getters[rs] = self.evt.getValidHandle(
                                         eval(rs.validhandle_type_string()))
+    global product_getter_pytype_strings
+    for typestr in product_getter_pytype_strings:
+      self.product_getters[typestr] = self.evt.getValidHandle(
+                                        eval(typestr))
     self.product_getters_setup = True
   
   def _get_record_by_artrecordspec(self, record_spec):
@@ -365,7 +372,8 @@ class ArtFileReader(object):
     return retval
   
   def _get_record_by_inputtag(self, input_tag):
-    getter = self.evt.getValidHandle(input_tag.dtype)
+    #not chaching getters: getter = self.evt.getValidHandle(input_tag.dtype)
+    getter = self.product_getters[input_tag.dtype_arg]
     retval = None
     try: retval = getter(input_tag.input_tag).product()
     except:
@@ -411,6 +419,13 @@ class ArtFileReader(object):
         break
       self.evt.next()
     self.in_loop = False
+  
+  def list_art_records(self):
+    '''Return a list of type_modlabel_instname_procID for TTrees in file'''
+    return [ 
+      b.GetName().rstrip('.') 
+      for b in self.evt.getTTree().GetListOfBranches() 
+    ]
   
   get_first_event = initialize_gallery_event
   heist_event_loop = event_loop
@@ -482,6 +497,8 @@ class ArtRecordSpec(object):
       self.vector)
 
 
+
+
 class InputTag(object):
   '''Like art InputTag, but remembers type as well...
   
@@ -496,6 +513,8 @@ class InputTag(object):
     except: raise ValueError('Could not resolve '+self.dtype_arg+' to a valid type!')
     
     # THIS is the step that (I think) has to occur before the event loop starts
+    global product_getter_pytype_strings
+    product_getter_pytype_strings += [ self.dtype_arg ]
     _do_declare_Ttype(self.dtype.__cppname__)
     
     # make an art input tag
