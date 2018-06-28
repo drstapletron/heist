@@ -327,7 +327,7 @@ class ArtFileReader(object):
       self.evt.next()
     self.in_loop = False
   
-  def list_art_records(self, pattern=None, regex=None):
+  def list_records(self, pattern=None, regex=None):
     '''Return a list of type_modlabel_instname_procID for TTrees in file.
     
     Specify pattern to return only things with pattern as substring (case-
