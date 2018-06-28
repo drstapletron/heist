@@ -420,12 +420,25 @@ class ArtFileReader(object):
       self.evt.next()
     self.in_loop = False
   
-  def list_art_records(self):
-    '''Return a list of type_modlabel_instname_procID for TTrees in file'''
-    return [ 
-      b.GetName().rstrip('.') 
-      for b in self.evt.getTTree().GetListOfBranches() 
-    ]
+  def list_art_records(self, pattern=None, regex=None):
+    '''Return a list of type_modlabel_instname_procID for TTrees in file.
+    
+    Specify pattern to return only things with pattern as substring (case-
+      insensitive).
+    
+    Specify regex to match by regular expression (UNIMPLEMENTED).
+    '''
+    retval = []
+    if pattern==None and regex==None:
+      for b in self.evt.gallery_event.getTTree().GetListOfBranches():
+        retval += [ b.GetName().rstrip('.') ]
+    elif pattern!=None and regex==None:
+      for b in self.evt.gallery_event.getTTree().GetListOfBranches():
+        if pattern in b.GetName().lower(): retval += [ b.GetName().rstrip('.') ]
+    elif pattern==None and regex!=None:
+      raise NotImplementedError('DO ALL THE REGEXES!!!1!')
+    else: raise ValueError('Do not specify "pattern" AND "regex"!')
+    return retval
   
   get_first_event = initialize_gallery_event
   heist_event_loop = event_loop
