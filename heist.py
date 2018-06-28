@@ -10,12 +10,12 @@ __doc__ = '''Helpers for gallery+python.
 2018-06-20: heist.InputTag makes things better (see example below)
 
 NOTES: 
-  * heist.ROOT.gallery has attributes which list the ValidHandle
+  * heist.gallery has attributes which list the ValidHandle
     template types
-  * heist.ROOT.gallery.__getattribute__ is a 'wrapper_descriptor'
+  * heist.gallery.__getattribute__ is a 'wrapper_descriptor'
     whereas most objects __getattribute__ is a 'method-wrapper'
   * check types/classes declared to CLING with
-      heist.ROOT.gROOT.GetListOfClasses/Types().Print()
+      heist.gROOT.GetListOfClasses/Types().Print()
 
 TODO:
   * deprecate ArtRecordSpec in favor of heist.InputTag
@@ -27,7 +27,7 @@ TODO:
 
 Example:
   xtalhit_tag = heist.InputTag(
-                'ROOT.vector(ROOT.gm2calo.CrystalHitArtRecord)', 
+                'vector(gm2calo.CrystalHitArtRecord)', 
                 'islandFitterDAQ', 'fitter', '')
   artreader = heist.ArtFileReader(filename='something.root')
   
@@ -42,7 +42,7 @@ Example:
 '''
 
 import sys
-import ROOT as ROOT
+from ROOT import *
 
 ################################################################
 
@@ -161,12 +161,12 @@ def grab_art_files(directory, prefix, suffix='.root'):
 # useful functions from Marc Paterno
 def read_header(h):
         """Make the ROOT C++ jit compiler read the specified header."""
-        return ROOT.gROOT.ProcessLine('#include "%s"' % h)
+        return gROOT.ProcessLine('#include "%s"' % h)
 def provide_get_valid_handle(klass):
         """Make the ROOT C++ jit compiler instantiate the
            Event::getValidHandle member template for template
            parameter klass."""
-        return ROOT.gROOT.ProcessLine('template gallery::ValidHandle<%(name)s> gallery::Event::getValidHandle<%(name)s>(art::InputTag const&) const;' % {'name' : klass})
+        return gROOT.ProcessLine('template gallery::ValidHandle<%(name)s> gallery::Event::getValidHandle<%(name)s>(art::InputTag const&) const;' % {'name' : klass})
 
 
 # I"m not sure exactly what I really want to do with the next few functions...
@@ -324,6 +324,7 @@ class ArtFileReader(object):
     #self.art_record_specs += [ record_spec ]
     #return retval
   
+<<<<<<< HEAD
   def initialize_event(self):
     '''Initialize heist.Event (which initializes and stores a gallery::Event).'''
     filename_vector = ROOT.vector(ROOT.string)()
@@ -332,6 +333,17 @@ class ArtFileReader(object):
     self.evt = Event(filename_vector)
     if self.evt.gallery_event!=0 and self.evt.gallery_event!=None:
       self.evt_initialized = True
+=======
+  
+  def initialize_gallery_event(self):
+    '''Return first gallery event from files.'''
+    filename_vector = vector(string)()
+    for name in self.filename_list:
+      filename_vector.push_back(name)
+    self.evt = gallery.Event(filename_vector)
+    if self.evt!=0 and self.evt!=None:
+      self.gallery_evt_initialized = True
+>>>>>>> master
     return self.evt
   
   
@@ -465,13 +477,13 @@ def validhandle_type_string(record_type, record_namespace, vector=True):
   '''Compose a Python type string which specifies ValidHandle type.
   
   Example:
-    ROOT.vector(ROOT.gm2truth.IBMSTruthArtRecord)
+    vector(gm2truth.IBMSTruthArtRecord)
   '''
   retval = record_type
   if record_namespace != '':
     retval = record_namespace + '.' + retval
-  retval = 'ROOT.' + retval
-  if vector == True: retval = 'ROOT.vector(' + retval + ')'
+  retval = '' + retval
+  if vector == True: retval = 'vector(' + retval + ')'
   return retval
 
 
@@ -488,7 +500,7 @@ class ArtRecordSpec(object):
     self.instance_name = instance_name
     self.process_ID = process_ID
     self.vector = vector
-    self.input_tag = ROOT.art.InputTag(self.module_label,self.instance_name,self.process_ID)
+    self.input_tag = art.InputTag(self.module_label,self.instance_name,self.process_ID)
   
   def __str__(self):
     #return self.cpp_type_string() + ' with InputTag=%s_%s'%(self.module_label,self.instance_name)
@@ -581,8 +593,8 @@ class Event(object):
 class InputTag(object):
   '''Like art InputTag, but remembers type as well...
   
-  dtype is something like 'ROOT.vector(ROOT.gm2reconeast.BSTCorrectionArtRecord)'
-  or 'ROOT.art.Wrapper(something)'
+  dtype is something like 'vector(gm2reconeast.BSTCorrectionArtRecord)'
+  or 'art.Wrapper(something)'
   '''
   def __init__(self, dtype, label, instance='', process=''):
     
@@ -597,7 +609,7 @@ class InputTag(object):
     _do_declare_Ttype(self.dtype.__cppname__)
     
     # make an art input tag
-    self.input_tag = ROOT.art.InputTag(label,instance,process)
+    self.input_tag = art.InputTag(label,instance,process)
     
   def label(self):
     '''Passthrough to InputTag.label()'''
