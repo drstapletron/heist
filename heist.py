@@ -227,9 +227,6 @@ init_env()
 
 
 
-## strings like 'ROOT.vector(ROOT.gm2calo.CrystalHitArtRecord)':
-#product_getter_pytype_strings = []
-
 
 class ArtFileReader(object):
   '''Tracks art files, does ROOT initialization, and provides an event loop.
@@ -242,38 +239,12 @@ class ArtFileReader(object):
     self.evt = None               # heist Event
     self.i_evt = None             # index (from 0) of this event in full loop
     self.i_loop = None            # loop counter (=i_evt if no filtering)
-    #self.art_record_specs = []
-    #self.product_getters = {} # 
     
-    #self.gallery_evt_initialized = False #<-- DEPRECATED
     self.evt_initialized = False
-    #self.product_getters_setup = False #<-- DEPRECATED (by heist.Event)
     self.in_loop = False
     
     if filename!=None: self.add_filenames(filename)
-    
-#  def full_event_id(self):
-#    '''Returns (Run,SubRun,EventNumber).'''
-#    evt_id = self.evt.eventAuxiliary().id() # art event ID object
-#    return (evt_id.run(),evt_id.subRun(),evt_id.event())
-#  
-#  def run(self):
-#    '''Returns run number from art event ID.'''
-#    return self.evt.eventAuxiliary().id().run()
-#  
-#  def subrun(self):
-#    '''Returns SubRun number from art event ID.'''
-#    return self.evt.eventAuxiliary().id().subRun()
-#  
-#  def event_id(self):
-#    '''Returns Event ID number from art event ID.'''
-#    return self.evt.eventAuxiliary().id().event()
-#  
-#  def event_label(self, short=False):
-#    '''Returns RunNN SubRunNN EventNN.'''
-#    format_str = 'Run%d SubRun%d Event%d' if not short else 'r%ds%de%d'
-#    return format_str%self.full_event_id()
-  
+      
   def add_filenames(self, filename):
     '''Set self.filename_list.'''
     if type(filename)==str:
@@ -288,15 +259,6 @@ class ArtFileReader(object):
     
     '''
     pass
-  
-#  def add_record_spec(self, record_spec):
-#    '''Add ArtRecordSpec to data members.
-#    
-#    Must be called *BEFORE* setup_product_getters().
-#    '''
-#    if record_spec not in self.art_record_specs:
-#      _do_declare_Ttype(record_spec.cpp_type_string())
-#      self.art_record_specs += [ record_spec ]
   
   
   def setup_validhandle_templates(self, record_specs=None):
@@ -324,7 +286,6 @@ class ArtFileReader(object):
     #self.art_record_specs += [ record_spec ]
     #return retval
   
-<<<<<<< HEAD
   def initialize_event(self):
     '''Initialize heist.Event (which initializes and stores a gallery::Event).'''
     filename_vector = ROOT.vector(ROOT.string)()
@@ -333,86 +294,8 @@ class ArtFileReader(object):
     self.evt = Event(filename_vector)
     if self.evt.gallery_event!=0 and self.evt.gallery_event!=None:
       self.evt_initialized = True
-=======
-  
-  def initialize_gallery_event(self):
-    '''Return first gallery event from files.'''
-    filename_vector = ROOT.vector(ROOT.string)()
-    for name in self.filename_list:
-      filename_vector.push_back(name)
-    self.evt = ROOT.gallery.Event(filename_vector)
-    if self.evt!=0 and self.evt!=None:
-      self.gallery_evt_initialized = True
->>>>>>> master
     return self.evt
-  
-  
-  # DEPRECATED (in favor of heist.Event)
-  #def initialize_gallery_event(self):
-  #  '''Return first gallery event from files.'''
-  #  filename_vector = ROOT.vector(ROOT.string)()
-  #  for name in self.filename_list:
-  #    filename_vector.push_back(name)
-  #  self.evt = ROOT.gallery.Event(filename_vector)
-  #  if self.evt!=0 and self.evt!=None:
-  #    self.gallery_evt_initialized = True
-  #  return self.evt
-  
-  # DEPRECATED (in favor of heist.Event, which intializes getters 
-  #   automatically (and caches them...)
-  #def setup_product_getters(self):
-  #  '''
-  #  must be done after ArtFile.art_record_specs has been populated
-  #  can be done after the beginning of the event loop
-  #  '''
-  #  #if self.evt==None: 
-  #  if not self.gallery_evt_initialized:
-  #    print 'setup_product_getters: automatically initializing gallery event'
-  #    self.initialize_gallery_event()
-  #  for rs in self.art_record_specs:
-  #    self.product_getters[rs] = self.evt.getValidHandle(
-  #                                      eval(rs.validhandle_type_string()))
-  #  global product_getter_pytype_strings
-  #  for typestr in product_getter_pytype_strings:
-  #    self.product_getters[typestr] = self.evt.getValidHandle(
-  #                                      eval(typestr))
-  #  self.product_getters_setup = True
-  
-#  def _get_record_by_artrecordspec(self, record_spec):
-#    getter = self.product_getters[record_spec]
-#    retval = None
-#    try:
-#      retval = getter(record_spec.input_tag).product()
-#    except:
-#      exc_info = sys.exc_info()
-#      if 'ProductNotFound' not  in str(exc_info[1]):
-#        print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
-#          exc_info
-#        )
-#    #retval = retval.product()
-#    return retval
-#  
-#  def _get_record_by_inputtag(self, input_tag):
-#    #not chaching getters: getter = self.evt.getValidHandle(input_tag.dtype)
-#    getter = self.product_getters[input_tag.dtype_arg]
-#    retval = None
-#    try: retval = getter(input_tag.input_tag).product()
-#    except:
-#      exc_info = sys.exc_info()
-#      if 'ProductNotFound' not in str(exc_info[1]):
-#        print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
-#          exc_info
-#        )
-#    return retval
-#  
-#  def get_record(self, specification):
-#    if type(specification)==ArtRecordSpec:
-#      return self._get_record_by_artrecordspec(specification)
-#    elif type(specification)==InputTag:
-#      return self._get_record_by_inputtag(specification)
-#    else:
-#      raise ValueError(str(type(specification))+' is not a valid type for get_record!')
-  
+    
   def event_loop(self, evt_list=(), nmax=None):
     '''Like generate_event_loop() but filters by evt_list.
     
@@ -451,7 +334,6 @@ class ArtFileReader(object):
       for b in self.evt.gallery_event.getTTree().GetListOfBranches() 
     ]
   
-  #get_first_event = initialize_gallery_event # <-- DEPRECATED
   get_first_event = initialize_event
   heist_event_loop = event_loop
   generate_event_loop = event_loop
@@ -604,8 +486,6 @@ class InputTag(object):
     except: raise ValueError('Could not resolve '+self.dtype_arg+' to a valid type!')
     
     # THIS is the step that (I think) has to occur before the event loop starts
-    #global product_getter_pytype_strings
-    #product_getter_pytype_strings += [ self.dtype_arg ]
     _do_declare_Ttype(self.dtype.__cppname__)
     
     # make an art input tag
