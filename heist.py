@@ -368,6 +368,7 @@ class ArtFileReader(object):
           exc_info
         )
     #retval = retval.product()
+    if retval!=None and len(retval)==0: retval = None
     return retval
   
   def _get_record_by_inputtag(self, input_tag):
@@ -381,6 +382,7 @@ class ArtFileReader(object):
         print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
           exc_info
         )
+    if retval!=None and len(retval)==0: retval = None
     return retval
   
   def get_record(self, specification):
