@@ -462,6 +462,10 @@ class Event(object):
         print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
           exc_info
         )
+    
+    # make 'not found' condition easy to test
+    if retval!=None and len(retval)==0: retval = None
+    
     return retval
   
   def quicktag(self, spec_str):
