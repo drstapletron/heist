@@ -436,7 +436,7 @@ class ArtFileReader(object):
     '''Return a list of type_modlabel_instname_procID for TTrees in file'''
     return [ 
       b.GetName().rstrip('.') 
-      for b in self.evt.getTTree().GetListOfBranches() 
+      for b in self.evt.gallery_event.getTTree().GetListOfBranches() 
     ]
   
   #get_first_event = initialize_gallery_event # <-- DEPRECATED
