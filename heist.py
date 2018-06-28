@@ -316,7 +316,7 @@ class ArtFileReader(object):
     no_filter = len(evt_list)==0
     self.i_evt = self.i_loop = 0
     self.in_loop = True
-    while (not self.evt.atEnd()):
+    while (not self.evt.at_end()):
       if no_filter or (self.i_loop in evt_list): 
         yield self.evt
         self.i_evt += 1
@@ -432,10 +432,10 @@ class Event(object):
     self.gallery_event = ROOT.gallery.Event(filenames)
     self.product_getters = {}
   
-  def atEnd(self): return self.gallery_event.atEnd()
+  def at_end(self): return self.gallery_event.atEnd()
   def next(self): return self.gallery_event.next()
   
-  def get(self, input_tag):
+  def get_record(self, input_tag):
     '''Call getValidHandle<C++Type>(InputTag) and return data products.
     
     Checks for an existing product getter by looking for the string
@@ -486,27 +486,27 @@ class Event(object):
       typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
     return InputTag(typestr,modlabel,instname,procID)
   
-  def full_event_id(self):
+  def get_ID(self):
     '''Returns (Run,SubRun,EventNumber).'''
     evt_id = self.gallery_event.eventAuxiliary().id() # art event ID object
     return (evt_id.run(),evt_id.subRun(),evt_id.event())
   
-  def run(self):
+  def get_run_ID(self):
     '''Returns run number from art event ID.'''
     return self.gallery_event.eventAuxiliary().id().run()
   
-  def subrun(self):
+  def get_subrun_ID(self):
     '''Returns SubRun number from art event ID.'''
     return self.gallery_event.eventAuxiliary().id().subRun()
   
-  def event_id(self):
+  def get_event_ID(self):
     '''Returns Event ID number from art event ID.'''
     return self.gallery_event.eventAuxiliary().id().event()
   
-  def event_label(self, short=False):
+  def get_label(self, short=False):
     '''Returns RunNN SubRunNN EventNN.'''
     format_str = 'Run%d SubRun%d Event%d' if not short else 'r%ds%de%d'
-    return format_str%self.full_event_id()
+    return format_str%self.get_ID()
 
 
 class InputTag(object):
