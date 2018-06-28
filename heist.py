@@ -1,31 +1,6 @@
 
 
-__doc__ = '''Helpers for gallery+python.
-
-2017-07-06: modified some more while working on kicker data...
-2017-08-27: added 'magicdump' method
-2017-08-29: started some heavier modification...
-2017-10-01: mostly cleanup (some debugging)
-2017-11-29: magicdump autodetects iterables
-2018-06-20: heist.InputTag makes things better (see example below)
-
-NOTES: 
-  * heist.ROOT.gallery has attributes which list the ValidHandle
-    template types
-  * heist.ROOT.gallery.__getattribute__ is a 'wrapper_descriptor'
-    whereas most objects __getattribute__ is a 'method-wrapper'
-  * check types/classes declared to CLING with
-      heist.ROOT.gROOT.GetListOfClasses/Types().Print()
-
-TODO:
-  * clean up (breaking changes!)
-  * facility to open up a file and inspect all art records (see rootls)
-  * gracefully handle the ProductNotFound exception (and go to the next event?)
-    * NOTE: sometimes I get 'None', and sometimes I get a length-zero vector
-  * make things like 'vector<short>' print data 
-    * override __str__ like type(trace).__str__ = my_special_function
-
---------------------------------------------------------------
+__doc__ = '''Helpers for gallery+PyROOT.
 
 Example:
   xtalhit_tag = heist.InputTag(
@@ -39,7 +14,29 @@ Example:
     heist.magicdump(xtalhit_recs[0])
 
 (NOTE: the heist InputTag object REQUIRES A TYPE STRING)
+
 --------------------------------------------------------------
+
+TODO:
+  * clean up (breaking changes!)
+  * facility to open up a file and inspect all art records (see rootls)
+  * gracefully handle the ProductNotFound exception (and go to the next event?)
+    * NOTE: sometimes I get 'None', and sometimes I get a length-zero vector
+  * make things like 'vector<short>' print data 
+    * override __str__ like type(trace).__str__ = my_special_function
+
+--------------------------------------------------------------
+
+NOTES: 
+  * heist.ROOT.gallery has attributes which list the ValidHandle
+    template types
+  * heist.ROOT.gallery.__getattribute__ is a 'wrapper_descriptor'
+    whereas most objects __getattribute__ is a 'method-wrapper'
+  * check types/classes declared to CLING with
+      heist.ROOT.gROOT.GetListOfClasses/Types().Print()
+
+--------------------------------------------------------------
+
 
 '''
 
