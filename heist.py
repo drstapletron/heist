@@ -18,10 +18,12 @@ NOTES:
       heist.ROOT.gROOT.GetListOfClasses/Types().Print()
 
 TODO:
-  * deprecate ArtRecordSpec in favor of heist.InputTag
-  * clean up after that (breaking changes!)
+  * clean up (breaking changes!)
   * facility to open up a file and inspect all art records (see rootls)
-  * gracefully handle the ProductNotFound exception (and go to the next event)
+  * gracefully handle the ProductNotFound exception (and go to the next event?)
+    * NOTE: sometimes I get 'None', and sometimes I get a length-zero vector
+  * make things like 'vector<short>' print data 
+    * override __str__ like type(trace).__str__ = my_special_function
 
 --------------------------------------------------------------
 
