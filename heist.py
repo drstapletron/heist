@@ -174,7 +174,7 @@ loaded_headers = []
 def _do_load_header(filename):
   global loaded_headers
   if filename in loaded_headers:
-    print 'skipping %s as it is already loaded...'%(filename,)
+    #print 'skipping %s as it is already loaded...'%(filename,)
     return 0
   retval = read_header(filename)
   if retval==0: loaded_headers += [ filename ]
@@ -187,7 +187,7 @@ loaded_handle_Ttypes = []
 def _do_declare_Ttype(Ttype):
   global loaded_handle_Ttypes
   if Ttype in loaded_handle_Ttypes:
-    print 'skipping %s as it is already declared...'%(Ttype,)
+    #print 'skipping %s as it is already declared...'%(Ttype,)
     return 0
   retval = provide_get_valid_handle(Ttype)
   if retval==0: loaded_handle_Ttypes += [ Ttype ]
@@ -444,6 +444,9 @@ class Event(object):
       and add it to product_getters with input_tag.dtype_arg as the key.
     '''
     
+    # check for string, and use quicktag to convert to an InputTag
+    if type(input_tag)==str: input_tag = self.quicktag(input_tag)
+    
     # check for product getter, and make one if not found
     if input_tag.dtype_arg not in self.product_getters.keys():
       try: self.product_getters[input_tag.dtype_arg] \
@@ -461,6 +464,27 @@ class Event(object):
           exc_info
         )
     return retval
+  
+  def quicktag(self, spec_str):
+    '''Convert a string to an InputTag.
+    
+    For example, this
+      gm2calo::LaserFillInfoArtRecords_fillInfoAggregator_aggregator_fullwithDQC
+    returns an InputTag instantiated with type
+      'vector(gm2calo.LaserFillInfoArtRecord)'
+    and the corresponding module label, instance name, and process ID.
+    
+    NOTES: 
+      * assumes any type ending in 's' is really a vector
+      * CANNOT handle art.Assns (yet)
+      * and maybe not Ptrs or any other templated types?
+    '''
+    typestr,modlabel,instname,procID = spec_str.split('_')
+    typestr = typestr.replace('::','.') # translating C++ to Python... :-(
+    typestr = 'ROOT.' + typestr
+    if typestr[-1]=='s': # convert hoomon-friendly name to 'collection' (vector)
+      typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
+    return InputTag(typestr,modlabel,instname,procID)
   
   def full_event_id(self):
     '''Returns (Run,SubRun,EventNumber).'''
