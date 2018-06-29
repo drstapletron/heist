@@ -383,40 +383,6 @@ def validhandle_type_string(record_type, record_namespace, vector=True):
   return retval
 
 
-class ArtRecordSpec(object):
-  '''TODO: eliminate this class (and just use InputTag).'''
-  def __init__(self, 
-      record_type, record_namespace, 
-      module_label, instance_name='', process_ID='', 
-      vector=True
-    ):
-    self.record_namespace = record_namespace
-    self.record_type = record_type
-    self.module_label = module_label
-    self.instance_name = instance_name
-    self.process_ID = process_ID
-    self.vector = vector
-    self.input_tag = ROOT.art.InputTag(self.module_label,self.instance_name,self.process_ID)
-  
-  def __str__(self):
-    #return self.cpp_type_string() + ' with InputTag=%s_%s'%(self.module_label,self.instance_name)
-    return 'InputTag=%s_%s_%s_?'%(
-      self.cpp_type_string(),self.module_label,self.instance_name)
-  
-  def cpp_type_string(self):
-    '''Moved to module scope.'''
-    return cpp_type_string(
-      self.record_type, 
-      self.record_namespace, 
-      self.vector)
-  
-  def validhandle_type_string(self):
-    '''Moved to module scope.'''
-    return validhandle_type_string(
-      self.record_type, 
-      self.record_namespace, 
-      self.vector)
-
 
 class Event(object):
   '''Like gallery::Event, but manages instantiating/caching product getters.
@@ -580,14 +546,7 @@ class InputTag(object):
   
   def __str__(self):
     return self.dtype.__cppname__+'_'+self.label()+'_'+self.instance()+'_'+self.process()
-  
-  def cpp_type_string(self):
-    '''For backward-compatibility with use of ArtRecordSpec'''
-    return self.dtype.__cppname__
-  
-  def validhandle_type_string(self):
-    '''For backward-compatibility with use of ArtRecordSpec'''
-    return self.dtype_string
+
 
 
 
