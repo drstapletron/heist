@@ -24,6 +24,8 @@ TODO:
     * NOTE: sometimes I get 'None', and sometimes I get a length-zero vector
   * make things like 'vector<short>' print data 
     * override __str__ like type(trace).__str__ = my_special_function
+  * think about ProductNotFound vs. empty collection (currently returns
+    None in both cases)
 
 --------------------------------------------------------------
 
