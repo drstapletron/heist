@@ -438,24 +438,35 @@ class Event(object):
     '''Call getValidHandle<C++Type>(InputTag) and return data products.
     
     Checks for an existing product getter by looking for the string
-      input_tag.dtype_arg in product_getters.keys().  If not found, then it
+      input_tag.dtype_string in product_getters.keys().  If not found, then it
       will instantiate it with gallery.Event.getValidHandle(input_tag.dtype)
-      and add it to product_getters with input_tag.dtype_arg as the key.
+      and add it to product_getters with input_tag.dtype_string as the key.
     '''
     
-    # check for string, and use quicktag to convert to an InputTag
-    if type(input_tag)==str: input_tag = self.quicktag(input_tag)
+    # check for InputTag, else assume we got a quicktag
+    if type(input_tag)==str:
+      input_tag = InputTag(quicktag=input_tag)
     
     # check for product getter, and make one if not found
-    if input_tag.dtype_arg not in self.product_getters.keys():
-      try: self.product_getters[input_tag.dtype_arg] \
-        = self.gallery_event.getValidHandle(input_tag.dtype)
-      except: raise RuntimeError(
-        'Could not instantiate product getter for type "%s"!'%(input_tag.dtype_arg))
+    if input_tag.dtype_string not in self.product_getters.keys():
+      try: 
+        self.product_getters[input_tag.dtype_string] \
+          = self.gallery_event.getValidHandle(input_tag.dtype)
+      except: 
+        exc_info = sys.exc_info()
+        print 'Got exception with\n  type: %s\n  value: %s\n  traceback: %s\n'%(
+          exc_info
+        )
+        raise RuntimeError(
+          'Could not instantiate product getter for type "%s"!'%(
+            input_tag.dtype_string
+          )
+        )
     
     # try to get the data product
     retval = None
-    try: retval = self.product_getters[input_tag.dtype_arg](input_tag.input_tag).product()
+    try: 
+      retval = self.product_getters[input_tag.dtype_string](input_tag.input_tag).product()
     except:
       exc_info = sys.exc_info()
       if 'ProductNotFound' not in str(exc_info[1]):
@@ -467,27 +478,6 @@ class Event(object):
     if retval!=None and len(retval)==0: retval = None
     
     return retval
-  
-  def quicktag(self, spec_str):
-    '''Convert a string to an InputTag.
-    
-    For example, this
-      gm2calo::LaserFillInfoArtRecords_fillInfoAggregator_aggregator_fullwithDQC
-    returns an InputTag instantiated with type
-      'vector(gm2calo.LaserFillInfoArtRecord)'
-    and the corresponding module label, instance name, and process ID.
-    
-    NOTES: 
-      * assumes any type ending in 's' is really a vector
-      * CANNOT handle art.Assns (yet)
-      * and maybe not Ptrs or any other templated types?
-    '''
-    typestr,modlabel,instname,procID = spec_str.split('_')
-    typestr = typestr.replace('::','.') # translating C++ to Python... :-(
-    typestr = 'ROOT.' + typestr
-    if typestr[-1]=='s': # convert hoomon-friendly name to 'collection' (vector)
-      typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
-    return InputTag(typestr,modlabel,instname,procID)
   
   def get_ID(self):
     '''Returns (Run,SubRun,EventNumber).'''
@@ -517,20 +507,63 @@ class InputTag(object):
   
   dtype is something like 'ROOT.vector(ROOT.gm2reconeast.BSTCorrectionArtRecord)'
   or 'ROOT.art.Wrapper(something)'
+  
+  You MUST specify parameters using exactly ONE of the following:
+    1) data product type (dtype) AND module label (label)
+    2) string representing TTree name (quicktag)
   '''
-  def __init__(self, dtype, label, instance='', process=''):
+  def __init__(self, 
+      dtype=None, label=None, instance='', process='', 
+      quicktag=None
+    ):
+    
+    
+    if dtype==None and label==None: # using quicktag_string
+      if quicktag==None or instance!='' or process!='': 
+        raise ValueError('Invalid arguments for InputTag constructor!')
+      dtype,label,instance,process = self.convert_quicktag(quicktag)
+    elif quicktag==None: # using dtype and label
+      if dtype==None or label==None:
+        raise ValueError('Invalid arguments for InputTag constructor!')
+    else:
+      raise ValueError('Invalid arguments for InputTag construction!')
     
     # save dtype string, then try to turn it into a type
-    self.dtype_arg = dtype
-    try: self.dtype = eval(dtype)
-    except: raise ValueError('Could not resolve '+self.dtype_arg+' to a valid type!')
+    self.dtype_string = dtype
+    try: 
+      self.dtype = eval(self.dtype_string)
+    except: 
+      raise ValueError('Could not resolve '+self.dtype_string+' to a valid type!')
     
-    # THIS is the step that (I think) has to occur before the event loop starts
+    # Does this step have to occur before creating gallery::Event?
     _do_declare_Ttype(self.dtype.__cppname__)
     
     # make an art input tag
     self.input_tag = ROOT.art.InputTag(label,instance,process)
     
+  def convert_quicktag(self, spec_str):
+    '''Convert a string to an InputTag.
+    
+    For example, this
+      ANameSpace::BArtRecords_CModLabel_DInstName_EProcID
+    returns an InputTag instantiated with
+      type='vector(ANameSpace.BArtRecord)'
+      module label=CModLabel
+      instance name='DInstName'
+      process ID='EProcID'
+    
+    NOTES: 
+      * assumes any type ending in 's' is really a vector
+      * CANNOT handle art.Assns (yet)
+      * and maybe not Ptrs or any other templated types?
+    '''
+    typestr,modlabel,instname,procID = spec_str.split('_')
+    typestr = typestr.replace('::','.') # translating C++ to Python... :-(
+    typestr = 'ROOT.' + typestr
+    if typestr[-1]=='s': # convert hoomon-friendly name to 'collection' (vector)
+      typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
+    return (typestr,modlabel,instname,procID)
+  
   def label(self):
     '''Passthrough to InputTag.label()'''
     return self.input_tag.label()
@@ -552,7 +585,7 @@ class InputTag(object):
   
   def validhandle_type_string(self):
     '''For backward-compatibility with use of ArtRecordSpec'''
-    return self.dtype_arg
+    return self.dtype_string
 
 
 
