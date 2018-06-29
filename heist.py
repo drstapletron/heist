@@ -9,8 +9,8 @@ Example:
   artreader = heist.ArtFileReader(filename='something.root')
   
   for evt in artreader.event_loop(nmax=30):
-    print artreader.event_label()
-    xtalhit_recs = artreader.get_record(xtalhit_tag)
+    print evt.get_label()
+    xtalhit_recs = evt.get_record(xtalhit_tag)
     heist.magicdump(xtalhit_recs[0])
 
 (NOTE: the heist InputTag object REQUIRES A TYPE STRING)
@@ -18,10 +18,7 @@ Example:
 --------------------------------------------------------------
 
 TODO:
-  * clean up (breaking changes!)
-  * facility to open up a file and inspect all art records (see rootls)
-  * gracefully handle the ProductNotFound exception (and go to the next event?)
-    * NOTE: sometimes I get 'None', and sometimes I get a length-zero vector
+  * implement regexes into ArtFileReader.list_records()
   * make things like 'vector<short>' print data 
     * override __str__ like type(trace).__str__ = my_special_function
   * think about ProductNotFound vs. empty collection (currently returns
@@ -51,41 +48,6 @@ autoload_headers = ['gallery/ValidHandle.h']
 
 ################################################################
 
-#def magicdump(obj, maxlength=65, exclude_hidden=True, exclude=()):
-#  '''Print some of an object's attributes (version 2017-05-05).
-#  
-#  Handles functions/methods better and truncates long lines.
-#  
-#  maxlength=65: truncate string representations to maxlength
-#  exclude_hidden=True: include _things_ and __stuff__
-#  exclude=(): skip attribs with names in this list
-#  '''
-#  print 'object type: %s\nsome attributes:'%(type(obj),)
-#  for attname in dir(obj):
-#    
-#    # don't print __stuff__ (unless exclude_hidden==False)
-#    if exclude_hidden==True and attname[0]=='_': continue
-#    
-#    # don't print excluded stuff
-#    if attname in exclude: continue
-#    
-#    att = obj.__getattribute__(attname) # fetch attribute
-#    str_rep = str(att) # make a string representation for attribute
-#    
-#    # if it's a function/method, print its docstring...
-#    #if str(type(att)) in ("<type 'instancemethod'>","<type 'builtin_function_or_method'>"):
-#    if 'method' in str(type(att)).lower() or 'function' in str(type(att)).lower():
-#      attname = attname+'()'
-#      if att.__doc__ != None: str_rep = att.__doc__
-#      else: str_rep = 'method (with no docstring)' # (...unless it doesn't have a docstring)
-#    
-#    # truncate at maxlength characters:
-#    if len(str_rep)>maxlength: str_rep = str_rep[:maxlength] + '...'
-#    
-#    # truncate after newline: 
-#    if '\n' in str_rep: str_rep = str_rep[:str_rep.index('\n')] + '...'
-#    
-#    print '  %s: %s'%(attname,str_rep)
 
 def magicdump(obj, 
     maxlength=65, 
@@ -201,27 +163,15 @@ def init_env(
     handle_Ttypes=[], 
     headers=[]
 ):
-  #global testvar
-  #print testvar
   global autoload_headers
-  #global loaded_headers
-  #global loaded_handle_Ttypes
+  
   # first ensure that the autoload_headers have been loaded
   for header in autoload_headers+headers:
-    #if header not in loaded_headers:
-    #  retval = read_header(header)
-    #  #print 'read_header() returned',retval
-    #  if retval==0: # TODO: check success condition
-    #    loaded_headers += [ header ]
     _do_load_header(header)
   
+  # ...then declare ValidHandle<T> types
   if len(handle_Ttypes)>0:
     for Ttype in handle_Ttypes:
-      #if Ttype not in loaded_handle_Ttypes:
-      #  retval = provide_get_valid_handle(Ttype)
-      #  print 'provide_get_valid_handle() returned',retval
-      #  if retval==retval: # TODO: impose a success condition
-      #    loaded_handle_Ttypes += [ Ttype ]
       _do_declare_Ttype(Ttype)
 
 init_env()
@@ -254,38 +204,6 @@ class ArtFileReader(object):
       for f in filename: self.filename_list += [ f ]
     else: 
       raise ValueError('filename should be a string (or collection of strings)')
-  
-  def declare_validhandle_type(self, type_str):
-    '''Declare the templated type gallery::ValidHandle<type_str> in gROOT.
-    
-    '''
-    pass
-  
-  
-  def setup_validhandle_templates(self, record_specs=None):
-    '''
-    
-    must be done BEFORE call to evt.getValidHandle()
-    '''
-    if record_specs!=None:
-      self.art_record_specs = []
-      for key in record_specs.keys():
-        rs = record_specs[key]
-        self.art_record_specs += [ rs ]
-    else: assert len(self.art_record_specs)>0 # did you forget to make record specs?
-    for rspec in self.art_record_specs:
-      self._setup_validhandle_template(rspec)
-  def _setup_validhandle_template(self, record_spec):
-    '''
-    must be done BEFORE call to evt.getValidHandle()
-    '''
-    # make a string like 'std::vector<gm2truth::IBMSTruthArtRecord>'
-    cpp_type_string = record_spec.cpp_type_string()
-    print 'provide_get_valid_handle(\'%s\')'%(cpp_type_string,)
-    #retval = provide_get_valid_handle(cpp_type_string)
-    provide_get_valid_handle(cpp_type_string)
-    #self.art_record_specs += [ record_spec ]
-    #return retval
   
   def initialize_event(self):
     '''Initialize heist.Event (which initializes and stores a gallery::Event).'''
@@ -347,41 +265,6 @@ class ArtFileReader(object):
       raise NotImplementedError('DO ALL THE REGEXES!!!1!')
     else: raise ValueError('Do not specify "pattern" AND "regex"!')
     return retval
-  
-  get_first_event = initialize_event
-  heist_event_loop = event_loop
-  generate_event_loop = event_loop
-
-
-ArtFile = ArtFileReader # TODO: remove to deprecate 'ArtFile'
-
-
-def cpp_type_string(record_type, record_namespace, vector=True):
-  '''Compose a C++ type string which specifies an ArtRecord type.
-  
-  Example:
-    std::vector<gm2truth::IBMSTruthArtRecord>
-  '''
-  retval = record_type
-  if record_namespace != '':
-    retval = record_namespace + '::' + retval
-  if vector == True:
-    retval = 'std::vector<' + retval + '>'
-  return retval
-
-def validhandle_type_string(record_type, record_namespace, vector=True):
-  '''Compose a Python type string which specifies ValidHandle type.
-  
-  Example:
-    ROOT.vector(ROOT.gm2truth.IBMSTruthArtRecord)
-  '''
-  retval = record_type
-  if record_namespace != '':
-    retval = record_namespace + '.' + retval
-  retval = 'ROOT.' + retval
-  if vector == True: retval = 'ROOT.vector(' + retval + ')'
-  return retval
-
 
 
 class Event(object):
@@ -470,6 +353,7 @@ class Event(object):
     return format_str%self.get_ID()
 
 
+
 class InputTag(object):
   '''Like art InputTag, but remembers type as well...
   
@@ -484,7 +368,6 @@ class InputTag(object):
       dtype=None, label=None, instance='', process='', 
       quicktag=None
     ):
-    
     
     if dtype==None and label==None: # using quicktag_string
       if quicktag==None or instance!='' or process!='': 
