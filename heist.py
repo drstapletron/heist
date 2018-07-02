@@ -23,6 +23,17 @@ TODO:
     * override __str__ like type(trace).__str__ = my_special_function
   * think about ProductNotFound vs. empty collection (currently returns
     None in both cases)
+  * import SOME things in ROOT namespace to heist namespace
+    * examples: vector, string, gm2calo and other C++ namespaces of
+      art records
+    * PS: see this: heist.magicdump(heist.ROOT.module.cppyy.libPyROOT)
+    * maybe try something like this
+        for thing in dir(ROOT.module.cppyy.libPyROOT):
+          if thing[0]!=thing[0].lower(): continue # skip ROOT, TObject, etc
+          if thing in dir(__builtins__): continue # don't overwrite e.g. 'list'
+          if thing in ('gInterpreter','gROOT','gSystem'): continue # skip these
+          from ROOT.module.cppyy.libPyROOT import thing
+      (though that last line won't work...)
 
 --------------------------------------------------------------
 
