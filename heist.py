@@ -275,7 +275,7 @@ class ArtFileReader(object):
     if pattern==None and regex==None:
       for b in self.evt.gallery_event.getTTree().GetListOfBranches():
         bname = b.GetName().rstrip('.')
-        if bname=='EventAuxiliary.': continue # not an art record
+        if bname=='EventAuxiliary': continue # not an art record
         retval += [ bname ]
     elif pattern!=None and regex==None:
       for b in self.evt.gallery_event.getTTree().GetListOfBranches():
@@ -434,14 +434,41 @@ class InputTag(object):
     
     NOTES: 
       * assumes any type ending in 's' is really a vector
+        * (except art::TriggerResults)
+      * allows you to specify 2-4 fields separated by '_'
+      * automatically prepends 'ROOT.' to types
       * CANNOT handle art.Assns (yet)
-      * and maybe not Ptrs or any other templated types?
+        * and maybe not Ptrs or any other templated types?
     '''
-    typestr,modlabel,instname,procID = spec_str.split('_')
-    typestr = typestr.replace('::','.') # translating C++ to Python... :-(
-    typestr = 'ROOT.' + typestr
-    if typestr[-1]=='s': # convert hoomon-friendly name to 'collection' (vector)
+    spec_list = spec_str.split('_')
+    if len(spec_list)<2: raise ValueError(
+      'You must specify at least TYPE and MODULE LABEL!')
+    elif len(spec_list)==2:
+      typestr,modlabel = spec_list
+      instname = procID = ''
+    elif len(spec_list)==3:
+      typestr,modlabel,instname = spec_list
+      procID = ''
+    elif len(spec_list)==4:
+      typestr,modlabel,instname,procID = spec_list
+    else: raise ValueError('Did you use too many underscores..?')
+    
+    # translating C++ to Python... :-(
+    typestr = typestr.replace('::','.')
+    
+    # deal with ROOT namespace
+    if typestr[:5]!='ROOT.': typestr = 'ROOT.' + typestr
+    
+    # convert hoomon-friendly name to 'collection' (vector)
+    if (
+        typestr[-1]=='s' 
+        and typestr!='TriggerResults' 
+        and typestr!='art.TriggerResults'
+        and typestr!='ROOT.art.TriggerResults'
+      ):
       typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
+    
+    print (typestr,modlabel,instname,procID)
     return (typestr,modlabel,instname,procID)
   
   def label(self):
