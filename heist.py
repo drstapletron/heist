@@ -274,10 +274,15 @@ class ArtFileReader(object):
     retval = []
     if pattern==None and regex==None:
       for b in self.evt.gallery_event.getTTree().GetListOfBranches():
-        retval += [ b.GetName().rstrip('.') ]
+        bname = b.GetName().rstrip('.')
+        if bname=='EventAuxiliary.': continue # not an art record
+        retval += [ bname ]
     elif pattern!=None and regex==None:
       for b in self.evt.gallery_event.getTTree().GetListOfBranches():
-        if pattern in b.GetName().lower(): retval += [ b.GetName().rstrip('.') ]
+        if pattern in b.GetName().lower():
+          bname = b.GetName().rstrip('.')
+          if bname=='EventAuxiliary': continue # not an art record
+          retval += [ bname ]
     elif pattern==None and regex!=None:
       raise NotImplementedError('DO ALL THE REGEXES!!!1!')
     else: raise ValueError('Do not specify "pattern" AND "regex"!')
