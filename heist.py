@@ -347,8 +347,10 @@ class Event(object):
           exc_info
         )
     
-    # make 'not found' condition easy to test
-    if retval!=None and len(retval)==0: retval = None
+    # handle emtpy vectors as well as ProductNotFound by simply doing
+    #   if records==None: continue
+    if retval!=None and hasattr(retval,'__len__') and len(retval)==0: 
+      retval = None
     
     return retval
   
