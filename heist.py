@@ -282,6 +282,11 @@ class ArtFileReader(object):
       raise NotImplementedError('DO ALL THE REGEXES!!!1!')
     else: raise ValueError('Do not specify "pattern" AND "regex"!')
     return retval
+  
+  def ls(self, pattern=None, regex=None):
+    '''Prints records from list_records, but more like ls.'''
+    for record in self.list_records(pattern=pattern,regex=regex):
+      print '  '+record
 
 
 class Event(object):
