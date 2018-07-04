@@ -34,6 +34,12 @@ TODO:
           if thing in ('gInterpreter','gROOT','gSystem'): continue # skip these
           from ROOT.module.cppyy.libPyROOT import thing
       (though that last line won't work...)
+  * improve magicdump iteration (see https://opensource.com/article/18/3/loop-\
+    better-deeper-look-iteration-python)
+    * ROOT.vector doesn't have __iter__, but it's iterable
+    * use iter()?
+    * `for i_item,item in enumerate(obj[:n_items_to_print])` breaks on 
+      TObjectArrays, but only because of the slicing
 
 --------------------------------------------------------------
 
