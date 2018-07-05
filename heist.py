@@ -50,6 +50,30 @@ NOTES:
     whereas most objects __getattribute__ is a 'method-wrapper'
   * check types/classes declared to CLING with
       heist.ROOT.gROOT.GetListOfClasses/Types().Print()
+  * gallery::Event.getTTree().GetListOfBranches()[index] gives
+      branches with names (GetName()) equivalent to the 'friendly
+      class name', and some other stuff
+  * Example: a TBranchElement gives this information:
+      GetName():
+        'gm2calo::CrystalHitArtRecords_islandFitterDAQ_..._.'
+      GetTypeName():
+      GetClassName():
+        'art::Wrapper<vector<gm2calo::CrystalHitArtRecord> >'
+      GetTotalSize():
+        21140L
+      Sizeof():
+        132
+      Hash():
+        3052144249L
+      GetClass():
+        TClass object ("art::Wrapper<vector<gm2calo::CrystalHitArtRecord> >")
+      GetClass().GetTypeInfo().name():
+        'N3art7WrapperISt6vectorIN7gm2calo19CrystalHitArtRecordESaIS3_EEEE'
+      Print()
+        ..table of entries & baskets & stuff
+      and some others I can't interpret like GetNleaves->1, 
+      GetEntries->2L, GetEvent->9, GetCheckSum->3661472484L, 
+      and a bunch of others that just return 0 or something..
 
 --------------------------------------------------------------
 
