@@ -276,7 +276,7 @@ class ArtFileReader(object):
     filename_vector = ROOT.vector(ROOT.string)()
     for name in self.filename_list:
       filename_vector.push_back(name)
-    self.evt = Event(filename_vector)
+    self.evt = Event(self, filename_vector)
     if self.evt.gallery_event!=0 and self.evt.gallery_event!=None:
       self.evt_initialized = True
     return self.evt
@@ -353,7 +353,8 @@ class Event(object):
   
   It also makes sense to move a few things here from ArtFileReader.
   '''
-  def __init__(self, filenames):
+  def __init__(self, artfilereader, filenames):
+    self.artfilereader = artfilereader
     self.filenames = filenames
     self.gallery_event = ROOT.gallery.Event(filenames)
     self.product_getters = {}
@@ -405,7 +406,7 @@ class Event(object):
     # handle emtpy vectors as well as ProductNotFound by simply doing
     #   if records==None: continue
     if retval!=None and hasattr(retval,'__len__') and len(retval)==0: 
-      retval = None
+      retval = 0
     
     return retval
   
@@ -430,6 +431,17 @@ class Event(object):
     '''Returns RunNN SubRunNN EventNN.'''
     format_str = 'Run%d SubRun%d Event%d' if not short else 'r%ds%de%d'
     return format_str%self.get_ID()
+  
+  def ls(self, pattern=None, regex=None, showfail=False):
+    for bname in self.artfilereader.list_records(pattern=pattern,regex=regex):
+      rec,length = None,None
+      try: rec = self.get_record(bname)
+      except: pass
+      if rec==None and showfail==True: print '  ????  %s'%(bname,)
+      elif rec==0: pass
+      else:
+        try: print ' % 6d %s'%(len(rec),bname)
+        except: pass
 
 
 
