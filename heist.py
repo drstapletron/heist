@@ -18,11 +18,11 @@ Example:
 --------------------------------------------------------------
 
 TODO:
-  * implement regexes into ArtFileReader.list_records()
+  * implement regexes in ArtFileReader.list_records()
   * make things like 'vector<short>' print data 
     * override __str__ like type(trace).__str__ = my_special_function
-  * think about ProductNotFound vs. empty collection (currently returns
-    None in both cases)
+  * think about ProductNotFound vs. zero-length collection (currently 
+    returns None in both cases)
   * import SOME things in ROOT namespace to heist namespace
     * examples: vector, string, gm2calo and other C++ namespaces of
       art records
@@ -33,13 +33,38 @@ TODO:
           if thing in dir(__builtins__): continue # don't overwrite e.g. 'list'
           if thing in ('gInterpreter','gROOT','gSystem'): continue # skip these
           from ROOT.module.cppyy.libPyROOT import thing
-      (though that last line won't work...)
+      (though that last line won't work because 'thing' is just a string)
   * improve magicdump iteration (see https://opensource.com/article/18/3/loop-\
     better-deeper-look-iteration-python)
     * ROOT.vector doesn't have __iter__, but it's iterable
     * use iter()?
     * `for i_item,item in enumerate(obj[:n_items_to_print])` breaks on 
       TObjectArrays, but only because of the slicing
+  * fix artreader.ls() so that this doesn't happen when the gallery::Event is
+    at the last event in the file:
+      >>> artreader.ls('gps')
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "/media/sf_hosthome/heist/heist.py", line 317, in ls
+          for record in self.list_records(pattern=pattern,regex=regex):
+        File "/media/sf_hosthome/heist/heist.py", line 305, in list_records
+          for b in self.evt.gallery_event.getTTree().GetListOfBranches():
+      ReferenceError: attempt to access a null-pointer
+    The problem is fixed by artreader.evt.gallery_event.toBegin(), but that is
+    something that the user should be warned about, maybe with a big scary
+    notification message...
+  * at least one heist.InputTag MUST be instantiated before heist.event.
+    get_record(quicktag) will work but 
+      1) it's not clear why, and 
+      2) that should not be a requirement anyway
+  * debug and/or streamline use cases which never invoke an event loop (e.g.
+    something like
+      from heist import *
+      artreader = ArtFileReader(SomeFilename)
+      artreader.initialize_event()
+      artreader.evt.get_record(SomeTag)
+    It seems like `ArtFileReader.event_loop()` has to be called before the
+    `heist.Event.get_record()` function works, but I'm not sure why...
 
 --------------------------------------------------------------
 
@@ -51,13 +76,13 @@ NOTES:
   * check types/classes declared to CLING with
       heist.ROOT.gROOT.GetListOfClasses/Types().Print()
   * gallery::Event.getTTree().GetListOfBranches()[index] gives
-      branches with names (GetName()) equivalent to the 'friendly
-      class name', and some other stuff
-  * Example: a TBranchElement gives this information:
+    branches with names (GetName()) equivalent to the 'friendly
+    class name', and some other stuff
+  * Example: a TBranchElement from GetListOfBranches has member functions
+    which return information like this:
       GetName():
         'gm2calo::CrystalHitArtRecords_islandFitterDAQ_..._.'
-      GetTypeName():
-      GetClassName():
+      GetTypeName() and/or GetClassName():
         'art::Wrapper<vector<gm2calo::CrystalHitArtRecord> >'
       GetTotalSize():
         21140L
@@ -335,6 +360,7 @@ class Event(object):
   
   def at_end(self): return self.gallery_event.atEnd()
   def next(self): return self.gallery_event.next()
+  def previous(self): return self.gallery_event.previous()
   
   def get_record(self, input_tag):
     '''Call getValidHandle<C++Type>(InputTag) and return data products.
@@ -492,7 +518,7 @@ class InputTag(object):
       ):
       typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
     
-    print (typestr,modlabel,instname,procID)
+    #print (typestr,modlabel,instname,procID)
     return (typestr,modlabel,instname,procID)
   
   def label(self):
