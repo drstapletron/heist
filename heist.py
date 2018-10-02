@@ -462,13 +462,13 @@ class InputTag(object):
     
     if dtype==None and label==None: # using quicktag_string
       if quicktag==None or instance!='' or process!='': 
-        raise ValueError('Invalid arguments for InputTag constructor!')
+        raise ValueError('Please specify dtype and label (or at least quicktag).')
       dtype,label,instance,process = self.convert_quicktag(quicktag)
     elif quicktag==None: # using dtype and label
       if dtype==None or label==None:
-        raise ValueError('Invalid arguments for InputTag constructor!')
+        raise ValueError('Please specify dtype and label (or at least quicktag).')
     else:
-      raise ValueError('Invalid arguments for InputTag construction!')
+      raise ValueError('Please specify dtype and label (or at least quicktag).')
     
     # save dtype string, then try to turn it into a type
     self.dtype_string = dtype
