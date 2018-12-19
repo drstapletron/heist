@@ -453,7 +453,7 @@ class InputTag(object):
   
   You MUST specify parameters using exactly ONE of the following:
     1) data product type (dtype) AND module label (label)
-    2) string representing TTree name (quicktag)
+    2) string representing TTree name (explicitly as quicktag, or implicitly as dtype)
   '''
   def __init__(self, 
       dtype=None, label=None, instance='', process='', 
@@ -463,9 +463,11 @@ class InputTag(object):
     if dtype==None and label==None: # using quicktag_string
       if quicktag==None or instance!='' or process!='': 
         raise ValueError('Please specify dtype and label (or at least quicktag).')
-      dtype,label,instance,process = self.convert_quicktag(quicktag)
+      dtype,label,instance,process = self.convert_quicktag(quicktag.rstrip('.'))
     elif quicktag==None: # using dtype and label
-      if dtype==None or label==None:
+      if type(dtype)==str and label==None:
+        dtype,label,instance,process = self.convert_quicktag(dtype.rstrip('.'))
+      else:
         raise ValueError('Please specify dtype and label (or at least quicktag).')
     else:
       raise ValueError('Please specify dtype and label (or at least quicktag).')
