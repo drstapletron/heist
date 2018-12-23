@@ -442,6 +442,9 @@ class Event(object):
       else:
         try: print ' % 6d %s'%(len(rec),bname)
         except: pass
+  
+  # some aliases for member functions
+  get_records = get_record
 
 
 
