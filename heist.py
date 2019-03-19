@@ -320,6 +320,9 @@ class ArtFileReader(object):
     
     Specify regex to match by regular expression (UNIMPLEMENTED).
     '''
+    if not self.evt_initialized:
+      print 'list_records: automatically initializing heist.Event...'
+      self.initialize_event()
     retval = []
     if pattern==None and regex==None:
       for b in self.evt.gallery_event.getTTree().GetListOfBranches():
