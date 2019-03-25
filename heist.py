@@ -236,8 +236,8 @@ def init_env(
     _do_load_header(header)
   
   # ...then declare ValidHandle<T> types
-  if len(handle_Ttypes)>0:
-    for Ttype in handle_Ttypes:
+  if len(handle_Ttypes+handle_Ttypes)>0:
+    for Ttype in handle_Ttypes+handle_Ttypes:
       _do_declare_Ttype(Ttype)
 
 init_env()
@@ -250,8 +250,11 @@ class ArtFileReader(object):
   
   
   '''
-  def __init__(self, filename=None):
+  def __init__(self, filename=None, skip_initialize=False):
     '''Set filename(s) (and nothing else?)'''
+    if not skip_initialize and not filename: raise RuntimeError(
+      'Either provide a filename to ArtFileReader, or set skip_initialize to True'
+    )
     self.filename_list = []
     self.evt = None               # heist Event
     self.i_evt = None             # index (from 0) of this event in full loop
@@ -261,6 +264,11 @@ class ArtFileReader(object):
     self.in_loop = False
     
     if filename!=None: self.add_filenames(filename)
+    
+    if not skip_initialize:
+      _do_declare_Ttype('art::TriggerResults')
+      self.initialize_event()
+      if self.evt: print 'Initialized ArtFileReader event at %s'%self.evt.get_label()
       
   def add_filenames(self, filename):
     '''Set self.filename_list.'''
@@ -469,10 +477,10 @@ class InputTag(object):
     if dtype==None and label==None: # using quicktag_string
       if quicktag==None or instance!='' or process!='': 
         raise ValueError('Please specify dtype and label (or at least quicktag).')
-      dtype,label,instance,process = self.convert_quicktag(quicktag.rstrip('.'))
+      dtype,label,instance,process = convert_quicktag(quicktag.rstrip('.'))
     elif quicktag==None: # using dtype and label
       if type(dtype)==str and label==None:
-        dtype,label,instance,process = self.convert_quicktag(dtype.rstrip('.'))
+        dtype,label,instance,process = convert_quicktag(dtype.rstrip('.'))
       else:
         raise ValueError('Please specify dtype and label (or at least quicktag).')
     else:
@@ -490,57 +498,7 @@ class InputTag(object):
     
     # make an art input tag
     self.input_tag = ROOT.art.InputTag(label,instance,process)
-    
-  def convert_quicktag(self, spec_str):
-    '''Convert a string to an InputTag.
-    
-    For example, this
-      ANameSpace::BArtRecords_CModLabel_DInstName_EProcID
-    returns an InputTag instantiated with
-      type='vector(ANameSpace.BArtRecord)'
-      module label=CModLabel
-      instance name='DInstName'
-      process ID='EProcID'
-    
-    NOTES: 
-      * assumes any type ending in 's' is really a vector
-        * (except art::TriggerResults)
-      * allows you to specify 2-4 fields separated by '_'
-      * automatically prepends 'ROOT.' to types
-      * CANNOT handle art.Assns (yet)
-        * and maybe not Ptrs or any other templated types?
-    '''
-    spec_list = spec_str.split('_')
-    if len(spec_list)<2: raise ValueError(
-      'You must specify at least TYPE and MODULE LABEL!')
-    elif len(spec_list)==2:
-      typestr,modlabel = spec_list
-      instname = procID = ''
-    elif len(spec_list)==3:
-      typestr,modlabel,instname = spec_list
-      procID = ''
-    elif len(spec_list)==4:
-      typestr,modlabel,instname,procID = spec_list
-    else: raise ValueError('Did you use too many underscores..?')
-    
-    # translating C++ to Python... :-(
-    typestr = typestr.replace('::','.')
-    
-    # deal with ROOT namespace
-    if typestr[:5]!='ROOT.': typestr = 'ROOT.' + typestr
-    
-    # convert hoomon-friendly name to 'collection' (vector)
-    if (
-        typestr[-1]=='s' 
-        and typestr!='TriggerResults' 
-        and typestr!='art.TriggerResults'
-        and typestr!='ROOT.art.TriggerResults'
-      ):
-      typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
-    
-    #print (typestr,modlabel,instname,procID)
-    return (typestr,modlabel,instname,procID)
-  
+      
   def label(self):
     '''Passthrough to InputTag.label()'''
     return self.input_tag.label()
@@ -557,6 +515,57 @@ class InputTag(object):
     return self.dtype.__cppname__+'_'+self.label()+'_'+self.instance()+'_'+self.process()
 
 
+
+
+def convert_quicktag(spec_str):
+  '''Convert a string to an InputTag.
+  
+  For example, this
+    ANameSpace::BArtRecords_CModLabel_DInstName_EProcID
+  returns an InputTag instantiated with
+    type='vector(ANameSpace.BArtRecord)'
+    module label=CModLabel
+    instance name='DInstName'
+    process ID='EProcID'
+  
+  NOTES: 
+    * assumes any type ending in 's' is really a vector
+      * (except art::TriggerResults)
+    * allows you to specify 2-4 fields separated by '_'
+    * automatically prepends 'ROOT.' to types
+    * CANNOT handle art.Assns (yet)
+      * and maybe not Ptrs or any other templated types?
+  '''
+  spec_list = spec_str.split('_')
+  if len(spec_list)<2: raise ValueError(
+    'You must specify at least TYPE and MODULE LABEL!')
+  elif len(spec_list)==2:
+    typestr,modlabel = spec_list
+    instname = procID = ''
+  elif len(spec_list)==3:
+    typestr,modlabel,instname = spec_list
+    procID = ''
+  elif len(spec_list)==4:
+    typestr,modlabel,instname,procID = spec_list
+  else: raise ValueError('Did you use too many underscores..?')
+  
+  # translating C++ to Python... :-(
+  typestr = typestr.replace('::','.')
+  
+  # deal with ROOT namespace
+  if typestr[:5]!='ROOT.': typestr = 'ROOT.' + typestr
+  
+  # convert hoomon-friendly name to 'collection' (vector)
+  if (
+      typestr[-1]=='s' 
+      and typestr!='TriggerResults' 
+      and typestr!='art.TriggerResults'
+      and typestr!='ROOT.art.TriggerResults'
+    ):
+    typestr = 'ROOT.vector(' + typestr.rstrip('s') + ')'
+  
+  #print (typestr,modlabel,instname,procID)
+  return (typestr,modlabel,instname,procID)
 
 
 
