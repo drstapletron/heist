@@ -339,7 +339,7 @@ class ArtFileReader(object):
         retval += [ bname ]
     elif pattern!=None and regex==None:
       for b in self.evt.gallery_event.getTTree().GetListOfBranches():
-        if pattern in b.GetName().lower():
+        if pattern.lower() in b.GetName().lower():
           bname = b.GetName().rstrip('.')
           if bname=='EventAuxiliary': continue # not an art record
           retval += [ bname ]
