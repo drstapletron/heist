@@ -250,11 +250,12 @@ class ArtFileReader(object):
   
   
   '''
-  def __init__(self, filename=None, skip_initialize=False):
+  def __init__(self, filename=None, skip_initialize=False, quiet=False):
     '''Set filename(s) (and nothing else?)'''
     if not skip_initialize and not filename: raise RuntimeError(
       'Either provide a filename to ArtFileReader, or set skip_initialize to True'
     )
+    self.quiet = quiet
     self.filename_list = []
     self.evt = None               # heist Event
     self.i_evt = None             # index (from 0) of this event in full loop
@@ -268,7 +269,8 @@ class ArtFileReader(object):
     if not skip_initialize:
       _do_declare_Ttype('art::TriggerResults')
       self.initialize_event()
-      if self.evt: print 'Initialized ArtFileReader event at %s'%self.evt.get_label()
+      if self.evt and not self.quiet:
+        print 'Initialized ArtFileReader event at %s'%self.evt.get_label()
       
   def add_filenames(self, filename):
     '''Set self.filename_list.'''
@@ -304,7 +306,7 @@ class ArtFileReader(object):
     #  print 'event_loop: automatically setting up product getters...'
     #  self.setup_product_getters()
     if not self.evt_initialized:
-      print 'event_loop: automatically initializing heist.Event...'
+      if not self.quiet: print 'event_loop: automatically initializing heist.Event...'
       self.initialize_event()
     no_filter = len(evt_list)==0
     self.i_evt = self.i_loop = 0
@@ -315,7 +317,7 @@ class ArtFileReader(object):
         self.i_evt += 1
       self.i_loop += 1
       if nmax!=None and self.i_evt >= nmax:
-        print 'Reached maximum %d events!'%(nmax,)
+        if not self.quiet: print 'Reached maximum %d events!'%(nmax,)
         break
       self.evt.next()
     self.in_loop = False
@@ -329,7 +331,7 @@ class ArtFileReader(object):
     Specify regex to match by regular expression (UNIMPLEMENTED).
     '''
     if not self.evt_initialized:
-      print 'list_records: automatically initializing heist.Event...'
+      if not self.quiet: print 'list_records: automatically initializing heist.Event...'
       self.initialize_event()
     retval = []
     if pattern==None and regex==None:
