@@ -109,6 +109,24 @@ import sys
 import ROOT as ROOT
 
 ################################################################
+# improve readability of ROOT.std.vectors (& pairs, etc)
+# (see a more general attempt on the stl_repr branch)
+_primitive_types_ = ('int','float','ROOT.double','bool','ROOT.std.string')
+for primitive_type in _primitive_types_:
+  ROOT.std.vector(eval(primitive_type)).__str__ = lambda t: 'std::vector'+tuple(t).__str__()
+  ROOT.std.vector(eval(primitive_type)).__repr__ = lambda t: 'std::vector'+tuple(t).__repr__()
+  for other_primitive_type in _primitive_types_:
+    ROOT.std.pair(
+      eval(primitive_type),
+      eval(other_primitive_type)
+    ).__str__ = lambda t: 'std::pair(%s,%s)'%(str(t[0]),str(t[1]))
+    ROOT.std.pair(
+      eval(primitive_type),
+      eval(other_primitive_type)
+    ).__repr__ = lambda t: 'std::pair(%s,%s)'%(str(t[0]),str(t[1]))
+
+
+################################################################
 
 autoload_headers = ['gallery/ValidHandle.h']
 
@@ -172,7 +190,7 @@ def magicdump(obj,
     if '\n' in str_rep: str_rep = str_rep[:str_rep.index('\n')] + '...'
     
     print '  %s: %s'%(attname,str_rep)
-
+ls = magicdump
 
 import os
 def grab_art_files(directory, prefix, suffix='.root'):
