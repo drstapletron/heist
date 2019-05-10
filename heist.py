@@ -8,9 +8,9 @@ Example:
                 'islandFitterDAQ', 'fitter', '')
   artreader = heist.ArtFileReader(filename='something.root')
   
-  for evt in artreader.event_loop(nmax=30):
-    print evt.get_label()
-    xtalhit_recs = evt.get_record(xtalhit_tag)
+  for event in artreader.event_loop(nmax=30):
+    print event.get_label()
+    xtalhit_recs = event.get_record(xtalhit_tag)
     heist.magicdump(xtalhit_recs[0])
 
 (NOTE: the heist InputTag object REQUIRES A TYPE STRING)
@@ -48,9 +48,9 @@ TODO:
         File "/media/sf_hosthome/heist/heist.py", line 317, in ls
           for record in self.list_records(pattern=pattern,regex=regex):
         File "/media/sf_hosthome/heist/heist.py", line 305, in list_records
-          for b in self.evt.gallery_event.getTTree().GetListOfBranches():
+          for b in self.event.gallery_event.getTTree().GetListOfBranches():
       ReferenceError: attempt to access a null-pointer
-    The problem is fixed by artreader.evt.gallery_event.toBegin(), but that is
+    The problem is fixed by artreader.event.gallery_event.toBegin(), but that is
     something that the user should be warned about, maybe with a big scary
     notification message...
   * at least one heist.InputTag MUST be instantiated before heist.event.
@@ -62,7 +62,7 @@ TODO:
       from heist import *
       artreader = ArtFileReader(SomeFilename)
       artreader.initialize_event()
-      artreader.evt.get_record(SomeTag)
+      artreader.event.get_record(SomeTag)
     It seems like `ArtFileReader.event_loop()` has to be called before the
     `heist.Event.get_record()` function works, but I'm not sure why...
 
@@ -275,11 +275,12 @@ class ArtFileReader(object):
     )
     self.quiet = quiet
     self.filename_list = []
-    self.evt = None               # heist Event
-    self.i_evt = None             # index (from 0) of this event in full loop
-    self.i_loop = None            # loop counter (=i_evt if no filtering)
+    self.evt = None               # heist Event # TODO: deprecate
+    self.event = None             # heist Event (new name)
+    self.i_event = None             # index (from 0) of this event in full loop
+    self.i_loop = None            # loop counter (=i_event if no filtering)
     
-    self.evt_initialized = False
+    self.event_initialized = False
     self.in_loop = False
     
     if filename!=None: self.add_filenames(filename)
@@ -287,8 +288,8 @@ class ArtFileReader(object):
     if not skip_initialize:
       _do_declare_Ttype('art::TriggerResults')
       self.initialize_event()
-      if self.evt and not self.quiet:
-        print 'Initialized ArtFileReader event at %s'%self.evt.get_label()
+      if self.event and not self.quiet:
+        print 'Initialized ArtFileReader event at %s'%self.event.get_label()
       
   def add_filenames(self, filename):
     '''Set self.filename_list.'''
@@ -304,40 +305,43 @@ class ArtFileReader(object):
     filename_vector = ROOT.vector(ROOT.string)()
     for name in self.filename_list:
       filename_vector.push_back(name)
-    self.evt = Event(self, filename_vector)
-    if self.evt.gallery_event!=0 and self.evt.gallery_event!=None:
-      self.evt_initialized = True
-    return self.evt
+    self.event = Event(self, filename_vector)
+    if self.event.gallery_event!=0 and self.event.gallery_event!=None:
+      self.event_initialized = True
+    self.evt = self.event # TODO: deprecate ArtFileReader.evt (in favor of event)
+    return self.event
   
-  def event_loop(self, evt_list=(), nmax=None):
-    '''Like generate_event_loop() but filters by evt_list.
+  def event_loop(self, evt_list=(), event_list=(), nmax=None):
+    '''Like generate_event_loop() but filters by event_list.
     
-    ONLY yield when event index is in evt_list (yields ALL
-      when evt_list is empty (default))
+    ONLY yield when event index is in event_list (yields ALL
+      when event_list is empty (default))
     
-    NOTE: evt_list is ZERO-INDEXED! (e.g. 100 events will have 
+    NOTE: event_list is ZERO-INDEXED! (e.g. 100 events will have 
       indices 0 through 99)
     
     Might work...
     '''
+    if len(evt_list)==0 and len(event_list)>0: evt_list = event_list
+    if len(evt_list)>0 and len(event_list)==0: event_list = evt_list
     #if not self.product_getters_setup:
     #  print 'event_loop: automatically setting up product getters...'
     #  self.setup_product_getters()
-    if not self.evt_initialized:
+    if not self.event_initialized:
       if not self.quiet: print 'event_loop: automatically initializing heist.Event...'
       self.initialize_event()
-    no_filter = len(evt_list)==0
-    self.i_evt = self.i_loop = 0
+    no_filter = len(event_list)==0
+    self.i_event = self.i_loop = 0
     self.in_loop = True
-    while (not self.evt.at_end()):
-      if no_filter or (self.i_loop in evt_list): 
-        yield self.evt
-        self.i_evt += 1
+    while (not self.event.at_end()):
+      if no_filter or (self.i_loop in event_list): 
+        yield self.event
+        self.i_event += 1
       self.i_loop += 1
-      if nmax!=None and self.i_evt >= nmax:
+      if nmax!=None and self.i_event >= nmax:
         if not self.quiet: print 'Reached maximum %d events!'%(nmax,)
         break
-      self.evt.next()
+      self.event.next()
     self.in_loop = False
   
   def list_records(self, pattern=None, regex=None):
@@ -348,17 +352,17 @@ class ArtFileReader(object):
     
     Specify regex to match by regular expression (UNIMPLEMENTED).
     '''
-    if not self.evt_initialized:
+    if not self.event_initialized:
       if not self.quiet: print 'list_records: automatically initializing heist.Event...'
       self.initialize_event()
     retval = []
     if pattern==None and regex==None:
-      for b in self.evt.gallery_event.getTTree().GetListOfBranches():
+      for b in self.event.gallery_event.getTTree().GetListOfBranches():
         bname = b.GetName().rstrip('.')
         if bname=='EventAuxiliary': continue # not an art record
         retval += [ bname ]
     elif pattern!=None and regex==None:
-      for b in self.evt.gallery_event.getTTree().GetListOfBranches():
+      for b in self.event.gallery_event.getTTree().GetListOfBranches():
         if pattern.lower() in b.GetName().lower():
           bname = b.GetName().rstrip('.')
           if bname=='EventAuxiliary': continue # not an art record
@@ -443,8 +447,8 @@ class Event(object):
   
   def get_ID(self):
     '''Returns (Run,SubRun,EventNumber).'''
-    evt_id = self.gallery_event.eventAuxiliary().id() # art event ID object
-    return (evt_id.run(),evt_id.subRun(),evt_id.event())
+    event_id = self.gallery_event.eventAuxiliary().id() # art event ID object
+    return (event_id.run(),event_id.subRun(),event_id.event())
   
   def get_run_ID(self):
     '''Returns run number from art event ID.'''
