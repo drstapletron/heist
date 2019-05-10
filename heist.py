@@ -3,17 +3,84 @@
 __doc__ = '''Helpers for gallery+PyROOT.
 
 Example:
-  xtalhit_tag = heist.InputTag(
-                'ROOT.vector(ROOT.gm2calo.CrystalHitArtRecord)', 
-                'islandFitterDAQ', 'fitter', '')
-  artreader = heist.ArtFileReader(filename='something.root')
-  
-  for event in artreader.event_loop(nmax=30):
-    print event.get_label()
-    xtalhit_recs = event.get_record(xtalhit_tag)
-    heist.magicdump(xtalhit_recs[0])
+```
+vagrant run $ python
+Python 2.7.14 (default, Jan 10 2018, 09:46:06) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-18)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import heist
+>>> reader = heist.ArtFileReader('gm2calo_particle_gun_full.root')
+Successfully opened file gm2calo_particle_gun_full.root
+Initialized ArtFileReader event at Run1 SubRun1 Event1
+>>> reader.ls()
+  art::TriggerResults_TriggerResults__caloSimChain
+  gm2calo::CaloCalibrationConstants_gainCorrectorSim_corrector_caloSimChain
+  gm2calo::CaloClusterViewArtRecords_hitClusterSim_cluster_caloSimChain
+  gm2calo::CaloCrystalHitViewArtRecords_gainCorrectorSim_corrector_caloSimChain
+  gm2calo::CaloCrystalHitViewArtRecords_islandFitterSim_fitter_caloSimChain
+  gm2calo::ClusterArtRecords_hitClusterSim_cluster_caloSimChain
+  gm2calo::CrystalHitArtRecords_gainCorrectorSim_corrector_caloSimChain
+  gm2calo::CrystalHitArtRecords_islandFitterSim_fitter_caloSimChain
+  gm2truth::LookupArtRecords_filler_caloFill_caloSimChain
+  art::TriggerResults_TriggerResults__mdc0
+  art::RNGsnapshots_randomsaver__mdc0
+>>> for event in reader.event_loop():
+...   xtalhits = event.get_records('gm2calo::CrystalHitArtRecords_islandFitterSim_fitter_caloSimChain')
+...   if not xtalhits: continue
+...   print event.get_label()
+...   heist.ls(xtalhits)
+... 
+Run1 SubRun1 Event1
+object is an iterable type (<class 'ROOT.vector<gm2calo::CrystalHitArtRecord>'>)
+length = 19
+first 2 items: 
+-----------------------------------------------------------------
+item 0:
+object type: <class 'ROOT.gm2calo.CrystalHitArtRecord'>
+some attributes:
+  amcHeader: <ROOT.art::Ptr<gm2calo::AMCHeader> object at 0x11efc640>
+  caloNum: 3
+  chi2: 0.0
+  energy: 0.0
+  fillNum: 1
+  island: <ROOT.art::Ptr<gm2calo::IslandArtRecord> object at 0x11efc6a0>
+  islandNum: 0
+  laserHit: 0
+  pedestal: 0.0
+  pulsewidth: 0.0
+  riderChannelHeader: <ROOT.art::Ptr<gm2calo::RiderChannelHeader> object at 0x11efc660>
+  riderWaveformHeader: <ROOT.art::Ptr<gm2calo::RiderWaveformHeader> object at 0x11efc680...
+  status: 0
+  time: 81212.0
+  uncalibratedHit: <ROOT.art::Ptr<gm2calo::CrystalHitArtRecord> object at 0x11efc6c0...
+  xtalNum: 1
+-----------------------------------------------------------------
+item 1:
+object type: <class 'ROOT.gm2calo.CrystalHitArtRecord'>
+some attributes:
+  amcHeader: <ROOT.art::Ptr<gm2calo::AMCHeader> object at 0x11efc720>
+  caloNum: 3
+  chi2: 0.0
+  energy: 0.0
+  fillNum: 1
+  island: <ROOT.art::Ptr<gm2calo::IslandArtRecord> object at 0x11efc780>
+  islandNum: 0
+  laserHit: 0
+  pedestal: 0.0
+  pulsewidth: 0.0
+  riderChannelHeader: <ROOT.art::Ptr<gm2calo::RiderChannelHeader> object at 0x11efc740>
+  riderWaveformHeader: <ROOT.art::Ptr<gm2calo::RiderWaveformHeader> object at 0x11efc760...
+  status: 0
+  time: 81211.0
+  uncalibratedHit: <ROOT.art::Ptr<gm2calo::CrystalHitArtRecord> object at 0x11efc7a0...
+  xtalNum: 2
+-----------------------------------------------------------------
+...plus 17 more elements not shown...
 
-(NOTE: the heist InputTag object REQUIRES A TYPE STRING)
+...
+
+
+```
 
 --------------------------------------------------------------
 
