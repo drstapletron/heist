@@ -19,18 +19,18 @@ Prerequisites:
 
 Example:
 ```
-import heist
+from heist import ArtFileReader,InputTag,magicdump
 
-record_tag = heist.InputTag(
+record_tag = InputTag(
   'ROOT.vector(ROOT.namespace.recordtype)', 
   'modlabel', 'instname', 'procID'
 )
 
-artreader = heist.ArtFileReader(filename='something.root')
+artreader = ArtFileReader('something.root')
 
 for event in artreader.event_loop():
   records = event.get_record(record_tag)
-  heist.magicdump(records)
+  magicdump(records)
 ```
 
 # Interactive Inspection
